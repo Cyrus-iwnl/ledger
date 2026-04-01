@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:app="http://schemas.android.com/apk/res-auto"
+              xmlns:tools="http://schemas.android.com/tools"
+              android:id="@+id/category_root"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:gravity="center_horizontal"
+              android:orientation="vertical"
+              android:paddingStart="1dp"
+              android:paddingTop="3dp"
+              android:paddingEnd="1dp"
+              android:paddingBottom="14dp">
+
+    <FrameLayout
+            android:id="@+id/category_icon_container"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:background="@drawable/bg_editor_category_icon_unselected">
+
+        <ImageView
+                android:id="@+id/category_icon_image"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:tint="@color/editor_on_surface_variant"
+                android:visibility="gone"
+                tools:src="@drawable/ic_dashboard_restaurant_24" />
+
+        <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/category_icon_symbol"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:fontFamily="@font/material_symbols_outlined_static"
+                android:fontFeatureSettings="'liga'"
+                android:fontVariationSettings="'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:letterSpacing="0"
+                android:textColor="@color/editor_on_surface_variant"
+                android:textSize="25sp"
+                android:visibility="gone"
+                tools:text="restaurant" />
+    </FrameLayout>
+
+    <TextView
+            android:id="@+id/category_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxWidth="@dimen/editor_category_name_max_width"
+            android:maxLines="1"
+            android:singleLine="true"
+            android:text="Meals"
+            android:textColor="@color/editor_on_surface_variant"
+            android:textSize="13sp"
+            android:textStyle="normal" />
+
+</LinearLayout>

@@ -1,0 +1,43 @@
+<resources>
+    <string name="app_name">娴佹按璐︽湰</string>
+    <string name="home_title">璐︽湰</string>
+    <string name="home_subtitle">璧勯噾娴佸姩鎬昏</string>
+    <string name="monthly_spending">鏈湀鏀嚭</string>
+    <string name="expense_total_label">鎬绘敮鍑?</string>
+    <string name="income_total_label">鎬绘敹鍏?</string>
+    <string name="remaining_label">缁撲綑</string>
+    <string name="budget_progress">棰勭畻杩涘害</string>
+    <string name="month_selector_text">2026骞?3鏈?</string>
+    <string name="chart_title">鏈€杩?5澶╂眹鎬?</string>
+    <string name="window_7_days">7澶?</string>
+    <string name="window_15_days">15澶?</string>
+    <string name="day_ledger_title">姣忔棩鏄庣粏</string>
+    <string name="no_transaction_hint">褰撳ぉ鏆傛棤璁拌处</string>
+    <string name="add_transaction">鏂板璁拌处</string>
+    <string name="transaction_title">璁颁竴绗?</string>
+    <string name="expense">鏀嚭</string>
+    <string name="income">鏀跺叆</string>
+    <string name="select_date">閫夋嫨鏃ユ湡</string>
+    <string name="note_hint">澶囨敞</string>
+    <string name="category_title">鍒嗙被</string>
+    <string name="keypad_title">鏁板瓧閿洏</string>
+    <string name="clear">娓呯┖</string>
+    <string name="save">淇濆瓨</string>
+    <string name="backspace_key">閫€鏍?</string>
+    <string name="default_amount">&#165;0.00</string>
+    <string name="budget_of">鍗犻绠?&#165;%1$s</string>
+    <string name="budget_percent">%1$d%%</string>
+    <string name="budget_of_default">鍗犻绠?&#165;1,500.00</string>
+    <string name="budget_percent_default">0%</string>
+    <string name="trend_summary">鏀跺叆锛?1$s | 鏀嚭锛?2$s</string>
+    <string name="trend_summary_default">鏀跺叆锛?.00 | 鏀嚭锛?.00</string>
+    <string name="back">杩斿洖</string>
+    <string name="delete_transaction">鍒犻櫎</string>
+    <string name="delete_transaction_confirm">纭畾鍒犻櫎杩欐潯璁板綍鍚楋紵</string>
+    <string name="delete">鍒犻櫎</string>
+    <string name="edit">缂栬緫</string>
+    <string name="transaction_actions">鎿嶄綔</string>
+    <string name="cancel">鍙栨秷</string>
+    <string name="invalid_amount">璇疯緭鍏ュぇ浜?0 鐨勯噾棰?</string>
+</resources>
+

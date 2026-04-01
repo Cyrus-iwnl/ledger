@@ -1,0 +1,6 @@
+<resources>
+    <dimen name="screen_margin">16dp</dimen>
+    <dimen name="card_spacing">12dp</dimen>
+    <dimen name="fab_bottom_margin">28dp</dimen>
+    <dimen name="editor_category_name_max_width">64dp</dimen>
+</resources>
