@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">設定</string>
+    <string name="settings_close">返回</string>
+    <string name="settings_language_title">語言</string>
+    <string name="settings_language_subtitle">選擇應用語言</string>
+    <string name="language_simplified_chinese">简体中文</string>
+    <string name="language_traditional_chinese">繁體中文</string>
+    <string name="language_english">English</string>
+    <string name="menu_open_settings">開啟設定</string>
+</resources>

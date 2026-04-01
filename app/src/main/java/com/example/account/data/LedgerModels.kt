@@ -1,4 +1,4 @@
-﻿package com.example.account.data
+package com.example.account.data
 
 import androidx.annotation.DrawableRes
 import java.text.DecimalFormat
@@ -96,8 +96,8 @@ data class TransactionDraft(
 
 object LedgerFormatters {
     private val moneyFormat = DecimalFormat("#,##0.00")
-    private val shortDateFormatter = DateTimeFormatter.ofPattern("MM.dd", Locale.US)
-    private val dayLabelFormatter = DateTimeFormatter.ofPattern("MM.dd EEEE", Locale.US)
+    private val shortDateFormatter = DateTimeFormatter.ofPattern("MM.dd", Locale.getDefault())
+    private val dayLabelFormatter = DateTimeFormatter.ofPattern("MM.dd EEEE", Locale.getDefault())
 
     fun money(value: Double, currency: CurrencyCode = CurrencyCode.CNY): String {
         return "${currency.symbol}${moneyFormat.format(value)}"

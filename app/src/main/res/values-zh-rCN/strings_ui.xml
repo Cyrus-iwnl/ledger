@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_month_selector_placeholder">2026-03</string>
+    <string name="home_amount_placeholder">&#165;.00</string>
+    <string name="home_trend_filter">趋势筛选</string>
+    <string name="home_open_insights">打开洞察</string>
+    <string name="home_budget_not_set">未设置</string>
+    <string name="home_budget_of_format">占预算 &#165;%1$s</string>
+    <string name="home_trend_title_format">最近 %1$d 天汇总</string>
+    <string name="home_trend_summary_income_format">收入: %1$s</string>
+    <string name="home_trend_summary_expense_format">支出: %1$s</string>
+    <string name="home_trend_summary_both_format">收入: %1$s | 支出: %2$s</string>
+    <string name="home_selected_day_summary_format">%1$s  收入: %2$s | 支出: %3$s</string>
+    <string name="home_budget_for_month_format">%1$s 预算</string>
+    <string name="home_budget_input_invalid_decimals">最多支持 2 位小数</string>
+    <string name="home_budget_input_invalid_positive">请输入正数</string>
+    <string name="home_recorded_at_format">记录于 %1$s</string>
+
+    <string name="dialog_monthly_budget_title">设置月预算</string>
+    <string name="dialog_monthly_budget_hint">月预算</string>
+    <string name="dialog_delete_title">删除记录</string>
+    <string name="dialog_delete_subtitle">此操作不可撤销。</string>
+    <string name="dialog_delete_description">所选记录将从账本与统计中永久移除。</string>
+    <string name="dialog_delete_cancel_keep">保留</string>
+    <string name="dialog_actions_recorded_placeholder">记录于 --</string>
+    <string name="dialog_datetime_add_time">添加时间</string>
+    <string name="dialog_datetime_hide_time">隐藏时间</string>
+    <string name="dialog_datetime_hour">小时</string>
+    <string name="dialog_datetime_minute">分钟</string>
+    <string name="dialog_apply">应用</string>
+    <string name="dialog_trend_filter_title">图表筛选</string>
+    <string name="dialog_trend_filter_dimension">维度</string>
+    <string name="dialog_trend_filter_both">全部</string>
+    <string name="dialog_trend_filter_time_range">时间范围</string>
+    <string name="dialog_trend_filter_7d">7天</string>
+    <string name="dialog_trend_filter_15d">15天</string>
+
+    <string name="day_income_format">收入: %1$s</string>
+    <string name="day_expense_format">支出: %1$s</string>
+    <string name="category_uncategorized">未分类</string>
+    <string name="category_other">其他</string>
+    <string name="transaction_saved_ready_next">已保存，可继续下一笔。</string>
+    <string name="date_today">今天</string>
+    <string name="date_yesterday">昨天</string>
+    <string name="note_input_hint">输入备注...</string>
+    <string name="date_time_placeholder">今天 10:57</string>
+    <string name="transaction_key_again">再记</string>
+    <string name="trend_no_data">暂无趋势数据</string>
+
+    <string name="category_meals">餐饮</string>
+    <string name="category_snacks">零食</string>
+    <string name="category_drinks">饮品</string>
+    <string name="category_clothing">服饰</string>
+    <string name="category_transport">交通</string>
+    <string name="category_travel">旅行</string>
+    <string name="category_fun">娱乐</string>
+    <string name="category_utility">生活缴费</string>
+    <string name="category_learn">学习</string>
+    <string name="category_daily">日用</string>
+    <string name="category_beauty">美容</string>
+    <string name="category_medical">医疗</string>
+    <string name="category_sports">运动</string>
+    <string name="category_gifts">礼物</string>
+    <string name="category_digital">数码</string>
+    <string name="category_salary">工资</string>
+    <string name="category_bonus">奖金</string>
+    <string name="category_investment">投资</string>
+    <string name="category_refund">退款</string>
+</resources>

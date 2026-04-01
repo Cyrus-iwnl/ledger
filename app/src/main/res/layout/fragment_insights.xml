@@ -5,10 +5,18 @@
     android:background="@color/app_background"
     android:fitsSystemWindows="true">
 
-    <WebView
-        android:id="@+id/insights_webview"
+    <FrameLayout
+        android:id="@+id/insights_webview_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/app_background" />
+
+    <ProgressBar
+        android:id="@+id/insights_loading"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="center"
+        android:indeterminate="true" />
 
 </FrameLayout>

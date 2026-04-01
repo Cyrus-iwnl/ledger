@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">帳本</string>
+    <string name="home_title">首頁</string>
+    <string name="home_subtitle">資金流動總覽</string>
+    <string name="monthly_spending">本月支出</string>
+    <string name="expense_total_label">支出</string>
+    <string name="income_total_label">收入</string>
+    <string name="remaining_label">結餘</string>
+    <string name="budget_progress">預算進度</string>
+    <string name="month_selector_text">2026年3月</string>
+    <string name="chart_title">最近15天彙總</string>
+    <string name="window_7_days">7天</string>
+    <string name="window_15_days">15天</string>
+    <string name="day_ledger_title">每日明細</string>
+    <string name="no_transaction_hint">當天暫無記帳</string>
+    <string name="add_transaction">新增記帳</string>
+    <string name="transaction_title">記一筆</string>
+    <string name="expense">支出</string>
+    <string name="income">收入</string>
+    <string name="select_date">選擇日期</string>
+    <string name="note_hint">備註</string>
+    <string name="category_title">分類</string>
+    <string name="keypad_title">數字鍵盤</string>
+    <string name="clear">清空</string>
+    <string name="save">儲存</string>
+    <string name="backspace_key">退格</string>
+    <string name="default_amount">&#165;0.00</string>
+    <string name="budget_of">佔預算 &#165;%1$s</string>
+    <string name="budget_percent">%1$d%%</string>
+    <string name="budget_of_default">佔預算 &#165;1,500.00</string>
+    <string name="budget_percent_default">0%</string>
+    <string name="trend_summary">收入: %1$s | 支出: %2$s</string>
+    <string name="trend_summary_default">收入: 0.00 | 支出: 0.00</string>
+    <string name="back">返回</string>
+    <string name="delete_transaction">刪除</string>
+    <string name="delete_transaction_confirm">確定刪除此筆記錄嗎？</string>
+    <string name="delete">刪除</string>
+    <string name="edit">編輯</string>
+    <string name="transaction_actions">操作</string>
+    <string name="cancel">取消</string>
+    <string name="invalid_amount">請輸入大於 0 的金額。</string>
+</resources>

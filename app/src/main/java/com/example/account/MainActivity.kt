@@ -9,6 +9,8 @@ import com.example.account.databinding.ActivityMainBinding
 import com.example.account.ui.edit.EditTransactionFragment
 import com.example.account.ui.home.HomeFragment
 import com.example.account.ui.insights.InsightsFragment
+import com.example.account.ui.settings.LanguageManager
+import com.example.account.ui.settings.SettingsFragment
 
 class MainActivity : AppCompatActivity() {
 
@@ -16,8 +18,10 @@ class MainActivity : AppCompatActivity() {
     private val homeTag = HomeFragment::class.java.name
     private val editorTag = EditTransactionFragment::class.java.name
     private val insightsTag = InsightsFragment::class.java.name
+    private val settingsTag = SettingsFragment::class.java.name
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        LanguageManager.applySavedLanguage(this)
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -91,6 +95,18 @@ class MainActivity : AppCompatActivity() {
                 insightsTag
             )
             .addToBackStack(insightsTag)
+            .commit()
+        updateChrome()
+    }
+
+    fun openSettings() {
+        supportFragmentManager.beginTransaction()
+            .replace(
+                R.id.fragment_container,
+                SettingsFragment.newInstance(),
+                settingsTag
+            )
+            .addToBackStack(settingsTag)
             .commit()
         updateChrome()
     }

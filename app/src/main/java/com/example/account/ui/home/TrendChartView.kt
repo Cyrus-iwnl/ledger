@@ -90,7 +90,7 @@ class TrendChartView @JvmOverloads constructor(
         super.onDraw(canvas)
         if (points.isEmpty() || (!drawIncomeLine && !drawExpenseLine)) {
             emptyPaint.color = context.getColor(R.color.text_hint)
-            canvas.drawText("No trend data", width / 2f, height / 2f, emptyPaint)
+            canvas.drawText(context.getString(R.string.trend_no_data), width / 2f, height / 2f, emptyPaint)
             return
         }
 

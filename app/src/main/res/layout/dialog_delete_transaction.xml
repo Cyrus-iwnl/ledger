@@ -54,7 +54,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Delete Transaction"
+                        android:text="@string/dialog_delete_title"
                         android:textColor="@color/text_primary"
                         android:textSize="18sp"
                         android:textStyle="bold" />
@@ -63,7 +63,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="3dp"
-                        android:text="This action cannot be undone."
+                        android:text="@string/dialog_delete_subtitle"
                         android:textColor="@color/text_hint"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -73,7 +73,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
-                android:text="The selected entry will be permanently removed from your ledger and totals."
+                android:text="@string/dialog_delete_description"
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
 
@@ -89,7 +89,7 @@
                     style="@style/Widget.MaterialComponents.Button.TextButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Keep It"
+                    android:text="@string/dialog_delete_cancel_keep"
                     android:textColor="@color/text_secondary" />
 
                 <com.google.android.material.button.MaterialButton
@@ -98,7 +98,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:text="Delete"
+                    android:text="@string/delete"
                     android:textColor="@android:color/white"
                     app:backgroundTint="@color/expense_color" />
             </LinearLayout>

@@ -14,12 +14,14 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.account.R
+import com.example.account.data.CategoryLocalizer
 import com.example.account.data.DaySummary
 import com.example.account.data.LedgerCategory
 import com.example.account.data.LedgerFormatters
 import com.example.account.data.LedgerTransaction
 import com.example.account.data.TransactionType
 import com.google.android.material.card.MaterialCardView
+import java.util.Locale
 
 class HomeDayAdapter(
     private val categories: List<LedgerCategory>,
@@ -56,7 +58,7 @@ class HomeDayAdapter(
             onDayAdd: (Long) -> Unit,
             onTransactionClick: (Long) -> Unit
         ) {
-            dayLabel.text = summary.label.uppercase()
+            dayLabel.text = summary.label.uppercase(Locale.getDefault())
             val hasIncome = summary.income > 0.0
             val hasExpense = summary.expense > 0.0
             dayAmountsContainer.visibility = if (hasIncome || hasExpense) View.VISIBLE else View.GONE
@@ -69,8 +71,14 @@ class HomeDayAdapter(
                 0
             }
             dayExpenseText.layoutParams = expenseLayoutParams
-            dayIncomeText.text = "Income: ${LedgerFormatters.money(summary.income)}"
-            dayExpenseText.text = "Expense: ${LedgerFormatters.money(summary.expense)}"
+            dayIncomeText.text = itemView.context.getString(
+                R.string.day_income_format,
+                LedgerFormatters.money(summary.income)
+            )
+            dayExpenseText.text = itemView.context.getString(
+                R.string.day_expense_format,
+                LedgerFormatters.money(summary.expense)
+            )
 
             dayHeader.setOnClickListener {
                 onDayAdd(summary.dateMillis)
@@ -113,6 +121,7 @@ class HomeDayAdapter(
             val note = row.findViewById<TextView>(R.id.note_text)
             val amount = row.findViewById<TextView>(R.id.amount_text)
             val divider = row.findViewById<View>(R.id.row_divider)
+            val localizedCategoryName = CategoryLocalizer.displayName(itemView.context, category)
 
             val typeColor = if (transaction.type == TransactionType.EXPENSE) {
                 itemView.context.getColor(R.color.expense_color)
@@ -126,7 +135,7 @@ class HomeDayAdapter(
                 iconSymbol.typeface = symbolTypeface
                 iconSymbol.fontFeatureSettings = "'liga'"
                 iconSymbol.text = category?.iconGlyph
-                iconSymbol.contentDescription = category?.name ?: "Uncategorized"
+                iconSymbol.contentDescription = localizedCategoryName
                 iconSymbol.setTextColor(typeColor)
             } else {
                 iconSymbol.visibility = View.GONE
@@ -138,7 +147,7 @@ class HomeDayAdapter(
                 ColorUtils.setAlphaComponent(typeColor, if (transaction.type == TransactionType.EXPENSE) 28 else 24)
             )
 
-            name.text = category?.name ?: "Uncategorized"
+            name.text = localizedCategoryName
             val hasNote = transaction.note.isNotBlank()
             if (hasNote) {
                 note.visibility = View.VISIBLE

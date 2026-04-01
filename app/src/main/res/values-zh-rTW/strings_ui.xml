@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_month_selector_placeholder">2026-03</string>
+    <string name="home_amount_placeholder">&#165;.00</string>
+    <string name="home_trend_filter">趨勢篩選</string>
+    <string name="home_open_insights">開啟洞察</string>
+    <string name="home_budget_not_set">未設定</string>
+    <string name="home_budget_of_format">佔預算 &#165;%1$s</string>
+    <string name="home_trend_title_format">最近 %1$d 天彙總</string>
+    <string name="home_trend_summary_income_format">收入: %1$s</string>
+    <string name="home_trend_summary_expense_format">支出: %1$s</string>
+    <string name="home_trend_summary_both_format">收入: %1$s | 支出: %2$s</string>
+    <string name="home_selected_day_summary_format">%1$s  收入: %2$s | 支出: %3$s</string>
+    <string name="home_budget_for_month_format">%1$s 預算</string>
+    <string name="home_budget_input_invalid_decimals">最多支援 2 位小數</string>
+    <string name="home_budget_input_invalid_positive">請輸入正數</string>
+    <string name="home_recorded_at_format">記錄於 %1$s</string>
+
+    <string name="dialog_monthly_budget_title">設定月預算</string>
+    <string name="dialog_monthly_budget_hint">月預算</string>
+    <string name="dialog_delete_title">刪除記錄</string>
+    <string name="dialog_delete_subtitle">此操作無法復原。</string>
+    <string name="dialog_delete_description">所選記錄將從帳本與統計中永久移除。</string>
+    <string name="dialog_delete_cancel_keep">保留</string>
+    <string name="dialog_actions_recorded_placeholder">記錄於 --</string>
+    <string name="dialog_datetime_add_time">加入時間</string>
+    <string name="dialog_datetime_hide_time">隱藏時間</string>
+    <string name="dialog_datetime_hour">小時</string>
+    <string name="dialog_datetime_minute">分鐘</string>
+    <string name="dialog_apply">套用</string>
+    <string name="dialog_trend_filter_title">圖表篩選</string>
+    <string name="dialog_trend_filter_dimension">維度</string>
+    <string name="dialog_trend_filter_both">全部</string>
+    <string name="dialog_trend_filter_time_range">時間範圍</string>
+    <string name="dialog_trend_filter_7d">7天</string>
+    <string name="dialog_trend_filter_15d">15天</string>
+
+    <string name="day_income_format">收入: %1$s</string>
+    <string name="day_expense_format">支出: %1$s</string>
+    <string name="category_uncategorized">未分類</string>
+    <string name="category_other">其他</string>
+    <string name="transaction_saved_ready_next">已儲存，可繼續下一筆。</string>
+    <string name="date_today">今天</string>
+    <string name="date_yesterday">昨天</string>
+    <string name="note_input_hint">輸入備註...</string>
+    <string name="date_time_placeholder">今天 10:57</string>
+    <string name="transaction_key_again">再記</string>
+    <string name="trend_no_data">暫無趨勢資料</string>
+
+    <string name="category_meals">餐飲</string>
+    <string name="category_snacks">零食</string>
+    <string name="category_drinks">飲品</string>
+    <string name="category_clothing">服飾</string>
+    <string name="category_transport">交通</string>
+    <string name="category_travel">旅行</string>
+    <string name="category_fun">娛樂</string>
+    <string name="category_utility">生活繳費</string>
+    <string name="category_learn">學習</string>
+    <string name="category_daily">日用</string>
+    <string name="category_beauty">美容</string>
+    <string name="category_medical">醫療</string>
+    <string name="category_sports">運動</string>
+    <string name="category_gifts">禮物</string>
+    <string name="category_digital">數位</string>
+    <string name="category_salary">薪資</string>
+    <string name="category_bonus">獎金</string>
+    <string name="category_investment">投資</string>
+    <string name="category_refund">退款</string>
+</resources>

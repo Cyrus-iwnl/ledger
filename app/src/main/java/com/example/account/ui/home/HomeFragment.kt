@@ -42,7 +42,7 @@ class HomeFragment : Fragment() {
     private lateinit var adapter: HomeDayAdapter
     private val amountFormat = DecimalFormat("#,##0.00")
     private val budgetInputPattern = Regex("^\\d+(\\.\\d{1,2})?$")
-    private val monthFormat = DateTimeFormatter.ofPattern("MMM yyyy", Locale.US)
+    private val monthFormat = DateTimeFormatter.ofPattern("MMM yyyy", Locale.getDefault())
     private val transactionTimeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.getDefault())
     private var latestDashboard: LedgerDashboard? = null
     private var monthlyBudgetCap: Double? = null
@@ -86,6 +86,9 @@ class HomeFragment : Fragment() {
         binding.dayList.layoutManager = LinearLayoutManager(requireContext())
         binding.dayList.adapter = adapter
 
+        binding.menuButton.setOnClickListener {
+            (activity as? MainActivity)?.openSettings()
+        }
         binding.trendFilterButton.setOnClickListener {
             showTrendFilterDialog()
         }
@@ -204,7 +207,7 @@ class HomeFragment : Fragment() {
         val budgetCap = monthlyBudgetCap
         if (budgetCap == null || budgetCap <= 0.0) {
             binding.budgetPercentText.text = "--"
-            binding.budgetProgressText.text = "Not set"
+            binding.budgetProgressText.text = getString(R.string.home_budget_not_set)
             binding.budgetProgressBar.progress = 0
             binding.budgetProgressBar.setIndicatorColor(
                 requireContext().getColor(R.color.text_hint)
@@ -217,7 +220,10 @@ class HomeFragment : Fragment() {
                 .coerceAtLeast(0)
             val budgetProgress = budgetPercent.coerceAtMost(100)
             binding.budgetPercentText.text = "${budgetPercent}%"
-            binding.budgetProgressText.text = "of \u00A5${amountFormat.format(safeBudget)}"
+            binding.budgetProgressText.text = getString(
+                R.string.home_budget_of_format,
+                amountFormat.format(safeBudget)
+            )
             binding.budgetProgressBar.progress = budgetProgress
             binding.budgetProgressBar.setIndicatorColor(
                 requireContext().getColor(
@@ -234,7 +240,7 @@ class HomeFragment : Fragment() {
         if (selectedTrendDayLabel != null && selectedPoint == null) {
             selectedTrendDayLabel = null
         }
-        binding.trendTitleText.text = "Last ${selectedWindowDays} Days Summary"
+        binding.trendTitleText.text = getString(R.string.home_trend_title_format, selectedWindowDays)
         binding.trendSummaryText.text = selectedPoint?.let(::buildSelectedDaySummary)
             ?: buildTrendSummary(windowIncome, windowExpense)
 
@@ -248,15 +254,29 @@ class HomeFragment : Fragment() {
 
     private fun buildTrendSummary(windowIncome: Double, windowExpense: Double): String {
         return when (trendDisplayMode) {
-            TrendDisplayMode.INCOME -> "Income: ${amountFormat.format(windowIncome)}"
-            TrendDisplayMode.EXPENSE -> "Expense: ${amountFormat.format(windowExpense)}"
-            TrendDisplayMode.BOTH ->
-                "Income: ${amountFormat.format(windowIncome)} | Expense: ${amountFormat.format(windowExpense)}"
+            TrendDisplayMode.INCOME -> getString(
+                R.string.home_trend_summary_income_format,
+                amountFormat.format(windowIncome)
+            )
+            TrendDisplayMode.EXPENSE -> getString(
+                R.string.home_trend_summary_expense_format,
+                amountFormat.format(windowExpense)
+            )
+            TrendDisplayMode.BOTH -> getString(
+                R.string.home_trend_summary_both_format,
+                amountFormat.format(windowIncome),
+                amountFormat.format(windowExpense)
+            )
         }
     }
 
     private fun buildSelectedDaySummary(point: com.example.account.data.ChartPoint): String {
-        return "${point.label}  Income: ${amountFormat.format(point.income)} | Expense: ${amountFormat.format(point.expense)}"
+        return getString(
+            R.string.home_selected_day_summary_format,
+            point.label,
+            amountFormat.format(point.income),
+            amountFormat.format(point.expense)
+        )
     }
 
     private fun buildHeaderAmount(value: Double): SpannableString {
@@ -313,7 +333,10 @@ class HomeFragment : Fragment() {
         val cancelButton = dialogView.findViewById<View>(R.id.cancel_button)
         val saveButton = dialogView.findViewById<View>(R.id.save_button)
 
-        inputLayout.hint = "Budget for ${selectedMonth.format(monthFormat)}"
+        inputLayout.hint = getString(
+            R.string.home_budget_for_month_format,
+            selectedMonth.format(monthFormat)
+        )
         val existingBudget = monthlyBudgetCap?.takeIf { it > 0.0 }
         input.setText(
             existingBudget?.let { amountFormat.format(it).replace(",", "") } ?: ""
@@ -327,12 +350,12 @@ class HomeFragment : Fragment() {
         saveButton.setOnClickListener {
             val raw = input.text?.toString()?.trim()?.replace(",", "") ?: ""
             if (!budgetInputPattern.matches(raw)) {
-                inputLayout.error = "Please enter up to 2 decimal places"
+                inputLayout.error = getString(R.string.home_budget_input_invalid_decimals)
                 return@setOnClickListener
             }
             val value = raw.toDoubleOrNull()
             if (value == null || !value.isFinite() || value <= 0.0) {
-                inputLayout.error = "Please enter a positive number"
+                inputLayout.error = getString(R.string.home_budget_input_invalid_positive)
                 return@setOnClickListener
             }
             inputLayout.error = null
@@ -379,7 +402,7 @@ class HomeFragment : Fragment() {
         val recordedAt = viewModel.getTransaction(transactionId)
             ?.let { formatTransactionTime(it.timestampMillis) }
             ?: "--"
-        transactionTimeText.text = "RECORDED AT $recordedAt"
+        transactionTimeText.text = getString(R.string.home_recorded_at_format, recordedAt)
 
         editAction.setOnClickListener {
             dialog.dismiss()

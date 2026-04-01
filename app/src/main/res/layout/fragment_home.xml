@@ -38,10 +38,11 @@
                     android:layout_height="40dp">
 
                     <ImageButton
+                        android:id="@+id/menu_button"
                         android:layout_width="40dp"
                         android:layout_height="40dp"
                         android:background="@drawable/bg_nav_chip"
-                        android:contentDescription="@null"
+                        android:contentDescription="@string/menu_open_settings"
                         android:padding="8dp"
                         android:src="@drawable/ic_dashboard_menu_24" />
                 </FrameLayout>
@@ -65,7 +66,7 @@
                         android:gravity="center"
                         android:paddingStart="14dp"
                         android:paddingEnd="12dp"
-                        android:text="2026-03"
+                        android:text="@string/home_month_selector_placeholder"
                         android:textColor="@color/text_primary"
                         android:textSize="13sp"
                         android:textStyle="bold" />
@@ -80,7 +81,7 @@
                         android:layout_width="40dp"
                         android:layout_height="40dp"
                         android:background="@drawable/bg_nav_chip"
-                        android:contentDescription="@null"
+                        android:contentDescription="@string/home_open_insights"
                         android:padding="8dp"
                         android:src="@drawable/ic_dashboard_bar_chart_24" />
                 </FrameLayout>
@@ -97,7 +98,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:letterSpacing="0.12"
-                    android:text="MONTHLY SPENDING"
+                    android:text="@string/monthly_spending"
                     android:textAllCaps="true"
                     android:textColor="@color/text_hint"
                     android:textSize="10sp"
@@ -108,7 +109,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="0dp"
-                    android:text="¥.00"
+                    android:text="@string/home_amount_placeholder"
                     android:textColor="@color/text_primary"
                     android:textSize="44sp"
                     android:textStyle="bold" />
@@ -141,7 +142,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:letterSpacing="0.12"
-                                android:text="INCOME"
+                                android:text="@string/income_total_label"
                                 android:textAllCaps="true"
                                 android:textColor="@color/text_hint"
                                 android:textSize="10sp"
@@ -149,13 +150,18 @@
 
                         <TextView
                                 android:id="@+id/income_total_text"
-                                android:layout_width="wrap_content"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
-                                android:text="¥.00"
+                                android:maxLines="1"
+                                android:text="@string/home_amount_placeholder"
                                 android:textColor="@color/income_color"
                                 android:textSize="18sp"
-                                android:textStyle="bold"/>
+                                android:textStyle="bold"
+                                app:autoSizeMaxTextSize="18sp"
+                                app:autoSizeMinTextSize="10sp"
+                                app:autoSizeStepGranularity="1sp"
+                                app:autoSizeTextType="uniform" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -180,7 +186,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:letterSpacing="0.12"
-                            android:text="REMAINING"
+                            android:text="@string/remaining_label"
                             android:textAllCaps="true"
                             android:textColor="@color/text_hint"
                             android:textSize="10sp"
@@ -188,13 +194,18 @@
 
                         <TextView
                             android:id="@+id/remaining_total_text"
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="¥.00"
+                            android:maxLines="1"
+                            android:text="@string/home_amount_placeholder"
                             android:textColor="@color/text_primary"
                             android:textSize="18sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                            app:autoSizeMaxTextSize="18sp"
+                            app:autoSizeMinTextSize="10sp"
+                            app:autoSizeStepGranularity="1sp"
+                            app:autoSizeTextType="uniform" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
@@ -220,7 +231,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:letterSpacing="0.12"
-                        android:text="BUDGET PROGRESS"
+                        android:text="@string/budget_progress"
                         android:textAllCaps="true"
                         android:textColor="@color/text_hint"
                         android:textSize="10sp"
@@ -230,7 +241,7 @@
                         android:id="@+id/budget_percent_text"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="0%"
+                        android:text="@string/budget_percent_default"
                         android:textAllCaps="true"
                         android:textColor="@color/text_hint"
                         android:textSize="10sp"
@@ -241,7 +252,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
-                        android:text="of ¥,500.00"
+                        android:text="@string/budget_of_default"
                         android:textColor="@color/text_hint"
                         android:textSize="10sp"
                         android:textStyle="bold" />
@@ -293,7 +304,7 @@
                             android:id="@+id/trend_title_text"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Last 15 Days Summary"
+                            android:text="@string/chart_title"
                             android:textColor="@color/text_primary"
                             android:textSize="14sp"
                             android:textStyle="bold" />
@@ -303,7 +314,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="Inc: 0.00, Exp: 0.00"
+                            android:text="@string/trend_summary_default"
                             android:textColor="@color/text_hint"
                             android:textSize="10sp"
                             android:textStyle="bold" />
@@ -314,7 +325,7 @@
                         android:layout_width="32dp"
                         android:layout_height="32dp"
                         android:background="@android:color/transparent"
-                        android:contentDescription="Trend Filter"
+                        android:contentDescription="@string/home_trend_filter"
                         android:foreground="?attr/selectableItemBackgroundBorderless"
                         android:padding="4dp"
                         android:src="@drawable/ic_dashboard_more_horiz_24" />

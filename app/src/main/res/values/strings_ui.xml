@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_month_selector_placeholder">2026-03</string>
+    <string name="home_amount_placeholder">&#165;.00</string>
+    <string name="home_trend_filter">Trend Filter</string>
+    <string name="home_open_insights">Open insights</string>
+    <string name="home_budget_not_set">Not set</string>
+    <string name="home_budget_of_format">of &#165;%1$s</string>
+    <string name="home_trend_title_format">Last %1$d Days Summary</string>
+    <string name="home_trend_summary_income_format">Income: %1$s</string>
+    <string name="home_trend_summary_expense_format">Expense: %1$s</string>
+    <string name="home_trend_summary_both_format">Income: %1$s | Expense: %2$s</string>
+    <string name="home_selected_day_summary_format">%1$s  Income: %2$s | Expense: %3$s</string>
+    <string name="home_budget_for_month_format">Budget for %1$s</string>
+    <string name="home_budget_input_invalid_decimals">Please enter up to 2 decimal places</string>
+    <string name="home_budget_input_invalid_positive">Please enter a positive number</string>
+    <string name="home_recorded_at_format">RECORDED AT %1$s</string>
+
+    <string name="dialog_monthly_budget_title">Set Monthly Budget</string>
+    <string name="dialog_monthly_budget_hint">Monthly Budget</string>
+    <string name="dialog_delete_title">Delete Transaction</string>
+    <string name="dialog_delete_subtitle">This action cannot be undone.</string>
+    <string name="dialog_delete_description">The selected entry will be permanently removed from your ledger and totals.</string>
+    <string name="dialog_delete_cancel_keep">Keep It</string>
+    <string name="dialog_actions_recorded_placeholder">RECORDED AT --</string>
+    <string name="dialog_datetime_add_time">Add Time</string>
+    <string name="dialog_datetime_hide_time">Hide Time</string>
+    <string name="dialog_datetime_hour">Hour</string>
+    <string name="dialog_datetime_minute">Minute</string>
+    <string name="dialog_apply">Apply</string>
+    <string name="dialog_trend_filter_title">Chart Filter</string>
+    <string name="dialog_trend_filter_dimension">Dimension</string>
+    <string name="dialog_trend_filter_both">Both</string>
+    <string name="dialog_trend_filter_time_range">Time Range</string>
+    <string name="dialog_trend_filter_7d">7d</string>
+    <string name="dialog_trend_filter_15d">15d</string>
+
+    <string name="day_income_format">Income: %1$s</string>
+    <string name="day_expense_format">Expense: %1$s</string>
+    <string name="category_uncategorized">Uncategorized</string>
+    <string name="category_other">Other</string>
+    <string name="transaction_saved_ready_next">Saved. Ready for next entry.</string>
+    <string name="date_today">Today</string>
+    <string name="date_yesterday">Yesterday</string>
+    <string name="note_input_hint">Enter notes here...</string>
+    <string name="date_time_placeholder">Today 10:57</string>
+    <string name="transaction_key_again">Again</string>
+    <string name="trend_no_data">No trend data</string>
+
+    <string name="category_meals">Meals</string>
+    <string name="category_snacks">Snacks</string>
+    <string name="category_drinks">Drinks</string>
+    <string name="category_clothing">Clothing</string>
+    <string name="category_transport">Transport</string>
+    <string name="category_travel">Travel</string>
+    <string name="category_fun">Fun</string>
+    <string name="category_utility">Utility</string>
+    <string name="category_learn">Learn</string>
+    <string name="category_daily">Daily</string>
+    <string name="category_beauty">Beauty</string>
+    <string name="category_medical">Medical</string>
+    <string name="category_sports">Sports</string>
+    <string name="category_gifts">Gifts</string>
+    <string name="category_digital">Digital</string>
+    <string name="category_salary">Salary</string>
+    <string name="category_bonus">Bonus</string>
+    <string name="category_investment">Investment</string>
+    <string name="category_refund">Refund</string>
+</resources>

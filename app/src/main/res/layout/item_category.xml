@@ -57,7 +57,7 @@
             android:maxWidth="@dimen/editor_category_name_max_width"
             android:maxLines="1"
             android:singleLine="true"
-            android:text="Meals"
+            android:text="@string/category_meals"
             android:textColor="@color/editor_on_surface_variant"
             android:textSize="13sp"
             android:textStyle="normal" />

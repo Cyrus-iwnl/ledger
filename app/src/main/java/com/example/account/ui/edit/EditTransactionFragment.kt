@@ -536,8 +536,8 @@ class EditTransactionFragment : Fragment() {
         val date = dateTime.toLocalDate()
         val today = LocalDate.now(zoneId)
         val dateText = when (date) {
-            today -> "Today"
-            today.minusDays(1) -> "Yesterday"
+            today -> getString(R.string.date_today)
+            today.minusDays(1) -> getString(R.string.date_yesterday)
             else -> date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.getDefault()))
         }
         val timeText = dateTime.format(DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault()))
@@ -565,7 +565,11 @@ class EditTransactionFragment : Fragment() {
         fun updateTimeUi() {
             timeContainer.visibility = if (showTimeEditor) View.VISIBLE else View.GONE
             if (timeToggleButton is MaterialButton) {
-                timeToggleButton.text = if (showTimeEditor) "Hide Time" else "Add Time"
+                timeToggleButton.text = if (showTimeEditor) {
+                    getString(R.string.dialog_datetime_hide_time)
+                } else {
+                    getString(R.string.dialog_datetime_add_time)
+                }
             }
         }
 
@@ -663,7 +667,11 @@ class EditTransactionFragment : Fragment() {
         updatePrimaryActionUi()
         loadCategories(selectedCategoryId = savedCategoryId)
         binding.deleteButton.visibility = View.GONE
-        Toast.makeText(requireContext(), "Saved. Ready for next entry.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(
+            requireContext(),
+            R.string.transaction_saved_ready_next,
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
     private fun showDeleteTransactionConfirmation(transactionId: Long) {

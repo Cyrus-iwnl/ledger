@@ -23,7 +23,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="ACTIONS"
+                android:text="@string/transaction_actions"
                 android:textColor="@color/text_primary"
                 android:textSize="20sp"
                 android:textStyle="bold" />
@@ -33,7 +33,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="RECORDED AT --"
+                android:text="@string/dialog_actions_recorded_placeholder"
                 android:textColor="@color/text_hint"
                 android:textSize="12sp"
                 android:textStyle="bold" />
@@ -79,7 +79,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="EDIT"
+                        android:text="@string/edit"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp"
                         android:textStyle="bold" />
@@ -134,7 +134,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="DELETE"
+                        android:text="@string/delete"
                         android:textColor="@color/expense_color"
                         android:textSize="14sp"
                         android:textStyle="bold" />
