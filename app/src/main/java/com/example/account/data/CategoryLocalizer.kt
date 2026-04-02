@@ -28,6 +28,11 @@ object CategoryLocalizer {
             "expense_sports" -> R.string.category_sports
             "expense_gifts" -> R.string.category_gifts
             "expense_digital" -> R.string.category_digital
+            "expense_pets" -> R.string.category_pets
+            "expense_home" -> R.string.category_home
+            "expense_comm" -> R.string.category_comm
+            "expense_social" -> R.string.category_social
+            "expense_kids" -> R.string.category_kids
             "income_salary" -> R.string.category_salary
             "income_bonus" -> R.string.category_bonus
             "income_investment" -> R.string.category_investment

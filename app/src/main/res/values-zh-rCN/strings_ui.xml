@@ -62,6 +62,11 @@
     <string name="category_sports">运动</string>
     <string name="category_gifts">礼物</string>
     <string name="category_digital">数码</string>
+    <string name="category_pets">宠物</string>
+    <string name="category_home">居家</string>
+    <string name="category_comm">通讯</string>
+    <string name="category_social">社交</string>
+    <string name="category_kids">亲子</string>
     <string name="category_salary">工资</string>
     <string name="category_bonus">奖金</string>
     <string name="category_investment">投资</string>

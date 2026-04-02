@@ -62,6 +62,11 @@
     <string name="category_sports">Sports</string>
     <string name="category_gifts">Gifts</string>
     <string name="category_digital">Digital</string>
+    <string name="category_pets">Pets</string>
+    <string name="category_home">Home</string>
+    <string name="category_comm">Comm</string>
+    <string name="category_social">Social</string>
+    <string name="category_kids">Kids</string>
     <string name="category_salary">Salary</string>
     <string name="category_bonus">Bonus</string>
     <string name="category_investment">Investment</string>

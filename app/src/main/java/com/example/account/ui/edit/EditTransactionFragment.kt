@@ -90,6 +90,12 @@ class EditTransactionFragment : Fragment() {
         binding.categoryList.layoutManager = GridLayoutManager(requireContext(), 5)
         binding.categoryList.adapter = categoryAdapter
         binding.categoryList.itemAnimator = null
+        binding.categoryList.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            val totalHeight = binding.categoryList.height - binding.categoryList.paddingTop - binding.categoryList.paddingBottom
+            if (totalHeight > 0) {
+                categoryAdapter.setItemHeight(totalHeight / 4)
+            }
+        }
 
         applySystemBarColors(
             statusBarColor = ContextCompat.getColor(requireContext(), R.color.app_background),
