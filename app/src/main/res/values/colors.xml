@@ -45,7 +45,7 @@
     <color name="fab_shadow">#66212743</color>
     <color name="editor_bg">#FFFFFF</color>
     <color name="editor_header_bg">#B3FFFFFF</color>
-    <color name="editor_header_chip_bg">#F1F5F9</color>
+    <color name="editor_header_chip_bg">#EBEEF0</color>
     <color name="editor_header_chip_selected_bg">#FFFFFF</color>
     <color name="editor_header_chip_selected_text">#2D3335</color>
     <color name="editor_header_chip_unselected_text">#5A6062</color>
