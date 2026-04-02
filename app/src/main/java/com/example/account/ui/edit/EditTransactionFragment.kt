@@ -202,7 +202,7 @@ class EditTransactionFragment : Fragment() {
             consumeTouches = true
         )
         attachSwipeSwitchListener(binding.headerBar, touchSlop, allowTapToggle = false)
-        attachSwipeSwitchListener(binding.editorMetaPanel, touchSlop, allowTapToggle = false)
+        attachSwipeSwitchListener(binding.inputPanel, touchSlop, allowTapToggle = false)
     }
 
     private fun setupCategoryListSwipeToSwitchType() {
@@ -493,12 +493,12 @@ class EditTransactionFragment : Fragment() {
 
     private fun updateAmountPreview() {
         binding.amountPreview.text = formatAmountForEditor()
-        binding.amountPreview.setTextColor(
-            ContextCompat.getColor(
-                requireContext(),
-                if (selectedType == TransactionType.EXPENSE) R.color.editor_tertiary else R.color.income_color
-            )
+        val amountColor = ContextCompat.getColor(
+            requireContext(),
+            if (selectedType == TransactionType.EXPENSE) R.color.editor_tertiary else R.color.income_color
         )
+        binding.amountPreview.setTextColor(amountColor)
+        binding.currencySymbol.setTextColor(amountColor)
     }
 
     private fun formatAmountForEditor(): String {

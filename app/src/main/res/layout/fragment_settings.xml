@@ -25,7 +25,7 @@
             android:background="@drawable/bg_nav_chip"
             android:contentDescription="@string/settings_close"
             android:padding="8dp"
-            android:src="@drawable/ic_editor_close_24" />
+            android:src="@drawable/ic_arrow_back_24" />
 
         <TextView
             android:layout_width="0dp"
