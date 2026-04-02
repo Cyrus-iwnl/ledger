@@ -25,26 +25,26 @@ class LedgerRepository(context: Context) {
     private val sectionDateFormatter = DateTimeFormatter.ofPattern("MM.dd EEEE", Locale.US)
 
     val categories: List<LedgerCategory> = listOf(
-        LedgerCategory("expense_meals", "Meals", TransactionType.EXPENSE, R.drawable.ic_dashboard_restaurant_24, "restaurant", Color.parseColor("#2B51D9")),
-        LedgerCategory("expense_snacks", "Snacks", TransactionType.EXPENSE, android.R.drawable.ic_menu_gallery, "icecream", Color.parseColor("#2B51D9")),
-        LedgerCategory("expense_drinks", "Drinks", TransactionType.EXPENSE, android.R.drawable.ic_menu_gallery, "local_cafe", Color.parseColor("#2B51D9")),
-        LedgerCategory("expense_clothing", "Clothing", TransactionType.EXPENSE, android.R.drawable.ic_menu_edit, "checkroom", Color.parseColor("#2B51D9")),
-        LedgerCategory("expense_transport", "Transport", TransactionType.EXPENSE, R.drawable.ic_dashboard_directions_car_24, "directions_bus", Color.parseColor("#2B51D9")),
-        LedgerCategory("expense_travel", "Travel", TransactionType.EXPENSE, android.R.drawable.ic_menu_myplaces, "flight_takeoff", Color.parseColor("#2B51D9")),
-        LedgerCategory("expense_fun", "Fun", TransactionType.EXPENSE, android.R.drawable.ic_media_play, "confirmation_number", Color.parseColor("#2B51D9")),
-        LedgerCategory("expense_utility", "Utility", TransactionType.EXPENSE, android.R.drawable.ic_menu_manage, "bolt", Color.parseColor("#2B51D9")),
-        LedgerCategory("expense_learn", "Learn", TransactionType.EXPENSE, android.R.drawable.ic_menu_info_details, "school", Color.parseColor("#2B51D9")),
-        LedgerCategory("expense_daily", "Daily", TransactionType.EXPENSE, android.R.drawable.ic_menu_agenda, "shopping_basket", Color.parseColor("#2B51D9")),
-        LedgerCategory("expense_beauty", "Beauty", TransactionType.EXPENSE, android.R.drawable.ic_menu_camera, "face_3", Color.parseColor("#2B51D9")),
-        LedgerCategory("expense_medical", "Medical", TransactionType.EXPENSE, android.R.drawable.ic_menu_manage, "medical_services", Color.parseColor("#2B51D9")),
-        LedgerCategory("expense_sports", "Sports", TransactionType.EXPENSE, android.R.drawable.ic_media_play, "fitness_center", Color.parseColor("#2B51D9")),
-        LedgerCategory("expense_gifts", "Gifts", TransactionType.EXPENSE, android.R.drawable.ic_menu_send, "featured_seasonal_and_gifts", Color.parseColor("#2B51D9")),
-        LedgerCategory("expense_digital", "Digital", TransactionType.EXPENSE, android.R.drawable.ic_menu_slideshow, "devices", Color.parseColor("#2B51D9")),
-        LedgerCategory("income_salary", "Salary", TransactionType.INCOME, android.R.drawable.ic_menu_upload, "payments", Color.parseColor("#22C55E")),
-        LedgerCategory("income_bonus", "Bonus", TransactionType.INCOME, android.R.drawable.ic_input_add, "savings", Color.parseColor("#10B981")),
-        LedgerCategory("income_investment", "Investment", TransactionType.INCOME, android.R.drawable.ic_menu_send, "trending_up", Color.parseColor("#3B82F6")),
-        LedgerCategory("income_refund", "Refund", TransactionType.INCOME, android.R.drawable.ic_menu_revert, "undo", Color.parseColor("#84CC16")),
-        LedgerCategory("income_other", "Other", TransactionType.INCOME, android.R.drawable.ic_menu_share, "paid", Color.parseColor("#0EA5E9"))
+        LedgerCategory("expense_meals", "Meals", TransactionType.EXPENSE, R.drawable.ic_dashboard_restaurant_24, "restaurant", Color.parseColor("#FF9F89")),
+        LedgerCategory("expense_snacks", "Snacks", TransactionType.EXPENSE, android.R.drawable.ic_menu_gallery, "icecream", Color.parseColor("#F4C571")),
+        LedgerCategory("expense_drinks", "Drinks", TransactionType.EXPENSE, android.R.drawable.ic_menu_gallery, "local_cafe", Color.parseColor("#DDA77B")),
+        LedgerCategory("expense_clothing", "Clothing", TransactionType.EXPENSE, android.R.drawable.ic_menu_edit, "checkroom", Color.parseColor("#EA9AB2")),
+        LedgerCategory("expense_transport", "Transport", TransactionType.EXPENSE, R.drawable.ic_dashboard_directions_car_24, "directions_bus", Color.parseColor("#7DC3B7")),
+        LedgerCategory("expense_travel", "Travel", TransactionType.EXPENSE, android.R.drawable.ic_menu_myplaces, "flight_takeoff", Color.parseColor("#80A6E2")),
+        LedgerCategory("expense_fun", "Fun", TransactionType.EXPENSE, android.R.drawable.ic_media_play, "confirmation_number", Color.parseColor("#B894CB")),
+        LedgerCategory("expense_utility", "Utility", TransactionType.EXPENSE, android.R.drawable.ic_menu_manage, "bolt", Color.parseColor("#89A3D4")),
+        LedgerCategory("expense_learn", "Learn", TransactionType.EXPENSE, android.R.drawable.ic_menu_info_details, "school", Color.parseColor("#8195E0")),
+        LedgerCategory("expense_daily", "Daily", TransactionType.EXPENSE, android.R.drawable.ic_menu_agenda, "shopping_basket", Color.parseColor("#60C2D6")),
+        LedgerCategory("expense_beauty", "Beauty", TransactionType.EXPENSE, android.R.drawable.ic_menu_camera, "face_3", Color.parseColor("#F18B99")),
+        LedgerCategory("expense_medical", "Medical", TransactionType.EXPENSE, android.R.drawable.ic_menu_manage, "medical_services", Color.parseColor("#E78A86")),
+        LedgerCategory("expense_sports", "Sports", TransactionType.EXPENSE, android.R.drawable.ic_media_play, "fitness_center", Color.parseColor("#A8CE81")),
+        LedgerCategory("expense_gifts", "Gifts", TransactionType.EXPENSE, android.R.drawable.ic_menu_send, "featured_seasonal_and_gifts", Color.parseColor("#D485AD")),
+        LedgerCategory("expense_digital", "Digital", TransactionType.EXPENSE, android.R.drawable.ic_menu_slideshow, "devices", Color.parseColor("#77B8E1")),
+        LedgerCategory("income_salary", "Salary", TransactionType.INCOME, android.R.drawable.ic_menu_upload, "payments", Color.parseColor("#76C983")),
+        LedgerCategory("income_bonus", "Bonus", TransactionType.INCOME, android.R.drawable.ic_input_add, "savings", Color.parseColor("#ECC344")),
+        LedgerCategory("income_investment", "Investment", TransactionType.INCOME, android.R.drawable.ic_menu_send, "trending_up", Color.parseColor("#6DA5E8")),
+        LedgerCategory("income_refund", "Refund", TransactionType.INCOME, android.R.drawable.ic_menu_revert, "undo", Color.parseColor("#B0D057")),
+        LedgerCategory("income_other", "Other", TransactionType.INCOME, android.R.drawable.ic_menu_share, "paid", Color.parseColor("#57CDCB"))
     )
     init {
         ensureSeedData()

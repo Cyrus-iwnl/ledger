@@ -123,7 +123,7 @@ class HomeDayAdapter(
             val divider = row.findViewById<View>(R.id.row_divider)
             val localizedCategoryName = CategoryLocalizer.displayName(itemView.context, category)
 
-            val typeColor = if (transaction.type == TransactionType.EXPENSE) {
+            val typeColor = category?.accentColor ?: if (transaction.type == TransactionType.EXPENSE) {
                 itemView.context.getColor(R.color.expense_color)
             } else {
                 itemView.context.getColor(R.color.income_color)

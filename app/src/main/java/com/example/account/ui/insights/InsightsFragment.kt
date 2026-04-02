@@ -190,6 +190,7 @@ class InsightsFragment : Fragment() {
             put("name", CategoryLocalizer.nameForId(context, id, name))
             put("type", type.name)
             put("iconGlyph", iconGlyph.ifBlank { "payments" })
+            put("accentColor", String.format("#%06X", 0xFFFFFF and accentColor))
         }
     }
 
