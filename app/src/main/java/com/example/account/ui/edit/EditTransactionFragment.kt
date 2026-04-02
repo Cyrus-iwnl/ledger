@@ -92,8 +92,8 @@ class EditTransactionFragment : Fragment() {
         binding.categoryList.itemAnimator = null
 
         applySystemBarColors(
-            statusBarColor = ContextCompat.getColor(requireContext(), R.color.editor_bg),
-            navigationBarColor = ContextCompat.getColor(requireContext(), R.color.editor_keypad_surface)
+            statusBarColor = ContextCompat.getColor(requireContext(), R.color.app_background),
+            navigationBarColor = ContextCompat.getColor(requireContext(), R.color.app_background)
         )
         WindowCompat.getInsetsController(requireActivity().window, binding.root).apply {
             isAppearanceLightStatusBars = true

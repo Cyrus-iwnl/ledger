@@ -5,7 +5,7 @@
         xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#FFFFFF"
+        android:background="@color/app_background"
         android:fitsSystemWindows="true"
         tools:context=".ui.edit.EditTransactionFragment">
 
@@ -13,13 +13,12 @@
             android:id="@+id/header_bar"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:background="#FFFFFF"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingStart="16dp"
-            android:paddingTop="0dp"
+            android:paddingTop="12dp"
             android:paddingEnd="16dp"
-            android:paddingBottom="16dp"
+            android:paddingBottom="12dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
@@ -32,11 +31,11 @@
                     android:id="@+id/back_button"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:background="@drawable/bg_nav_chip"
                     android:contentDescription="@string/back"
                     android:padding="8dp"
                     android:src="@drawable/ic_editor_close_24"
-                    app:tint="#5A6062" />
+                    app:tint="@color/text_primary" />
         </FrameLayout>
 
         <FrameLayout
@@ -81,7 +80,6 @@
                             android:minHeight="0dp"
                             android:singleLine="true"
                             android:text="@string/expense"
-                            android:textAlignment="center"
                             android:textColor="#2D3335"
                             android:textSize="14sp"
                             android:textStyle="bold" />
@@ -117,41 +115,67 @@
                     android:id="@+id/delete_button"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:background="@drawable/bg_nav_chip"
                     android:contentDescription="@string/delete_transaction"
                     android:padding="8dp"
                     android:src="@drawable/ic_editor_delete_24"
-                    app:tint="#5A6062"
+                    app:tint="@color/text_primary"
                     android:visibility="gone" />
         </FrameLayout>
     </LinearLayout>
 
-    <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/category_list"
+    <com.google.android.material.card.MaterialCardView
+            android:id="@+id/category_card"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:clipChildren="false"
-            android:clipToPadding="false"
-            android:overScrollMode="never"
-            android:paddingStart="8dp"
-            android:paddingTop="16dp"
-            android:paddingEnd="8dp"
-            android:paddingBottom="12dp"
-            app:layout_constraintBottom_toTopOf="@id/input_panel"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="@color/surface_elevated"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp"
+            app:layout_constraintBottom_toTopOf="@id/input_panel_card"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/header_bar"
-            tools:listitem="@layout/item_category" />
+            app:layout_constraintTop_toBottomOf="@id/header_bar">
 
-    <LinearLayout
-            android:id="@+id/input_panel"
+        <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/category_list"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:overScrollMode="never"
+                android:paddingStart="4dp"
+                android:paddingTop="12dp"
+                android:paddingEnd="4dp"
+                android:paddingBottom="12dp"
+                tools:listitem="@layout/item_category" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
+            android:id="@+id/input_panel_card"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:background="#F2F3F5"
-            android:orientation="vertical"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="@color/surface_elevated"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent">
+
+        <LinearLayout
+                android:id="@+id/input_panel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@android:color/transparent"
+                android:orientation="vertical">
 
         <LinearLayout
                 android:id="@+id/editor_meta_panel"
@@ -203,7 +227,7 @@
                             android:maxLength="10"
                             android:maxLines="1"
                             android:text="0"
-                            android:textColor="#EB5E5E"
+                            android:textColor="#F87171"
                             android:textSize="24sp"
                             android:textStyle="bold" />
 
@@ -223,7 +247,7 @@
                             android:textColor="#2D3335"
                             android:textSize="12sp"
                             android:textStyle="bold"
-                            app:backgroundTint="#FFFFFF"
+                            app:backgroundTint="@color/app_background"
                             app:cornerRadius="15dp"
                             app:rippleColor="#335A6062" />
                 </LinearLayout>
@@ -245,7 +269,7 @@
                     android:textAllCaps="false"
                     android:textColor="#5A6062"
                     android:textSize="13sp"
-                    app:backgroundTint="#FFFFFF"
+                    app:backgroundTint="@color/app_background"
                     app:cornerRadius="15dp"
                     app:rippleColor="#335A6062" />
         </LinearLayout>
@@ -276,8 +300,8 @@
                         android:text="1"
                         android:textColor="#2D3335"
                         android:textSize="20sp"
-                        app:backgroundTint="#FFFFFF"
-                        app:cornerRadius="6dp" />
+                        app:backgroundTint="@color/app_background"
+                        app:cornerRadius="12dp" />
 
                 <com.google.android.material.button.MaterialButton
                         android:id="@+id/key_2"
@@ -292,8 +316,8 @@
                         android:text="2"
                         android:textColor="#2D3335"
                         android:textSize="20sp"
-                        app:backgroundTint="#FFFFFF"
-                        app:cornerRadius="6dp" />
+                        app:backgroundTint="@color/app_background"
+                        app:cornerRadius="12dp" />
 
                 <com.google.android.material.button.MaterialButton
                         android:id="@+id/key_3"
@@ -308,8 +332,8 @@
                         android:text="3"
                         android:textColor="#2D3335"
                         android:textSize="20sp"
-                        app:backgroundTint="#FFFFFF"
-                        app:cornerRadius="6dp" />
+                        app:backgroundTint="@color/app_background"
+                        app:cornerRadius="12dp" />
 
                 <com.google.android.material.button.MaterialButton
                         android:id="@+id/key_backspace"
@@ -320,8 +344,8 @@
                         android:layout_weight="1"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"
-                        app:backgroundTint="#FFFFFF"
-                        app:cornerRadius="6dp"
+                        app:backgroundTint="@color/app_background"
+                        app:cornerRadius="12dp"
                         app:icon="@drawable/ic_editor_backspace_24"
                         app:iconGravity="textStart"
                         app:iconPadding="0dp"
@@ -346,8 +370,8 @@
                         android:text="4"
                         android:textColor="#2D3335"
                         android:textSize="20sp"
-                        app:backgroundTint="#FFFFFF"
-                        app:cornerRadius="6dp" />
+                        app:backgroundTint="@color/app_background"
+                        app:cornerRadius="12dp" />
 
                 <com.google.android.material.button.MaterialButton
                         android:id="@+id/key_5"
@@ -362,8 +386,8 @@
                         android:text="5"
                         android:textColor="#2D3335"
                         android:textSize="20sp"
-                        app:backgroundTint="#FFFFFF"
-                        app:cornerRadius="6dp" />
+                        app:backgroundTint="@color/app_background"
+                        app:cornerRadius="12dp" />
 
                 <com.google.android.material.button.MaterialButton
                         android:id="@+id/key_6"
@@ -378,8 +402,8 @@
                         android:text="6"
                         android:textColor="#2D3335"
                         android:textSize="20sp"
-                        app:backgroundTint="#FFFFFF"
-                        app:cornerRadius="6dp" />
+                        app:backgroundTint="@color/app_background"
+                        app:cornerRadius="12dp" />
 
                 <com.google.android.material.button.MaterialButton
                         android:id="@+id/key_minus"
@@ -390,8 +414,8 @@
                         android:layout_weight="1"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"
-                        app:backgroundTint="#FFFFFF"
-                        app:cornerRadius="6dp"
+                        app:backgroundTint="@color/app_background"
+                        app:cornerRadius="12dp"
                         app:icon="@drawable/ic_editor_remove_24"
                         app:iconGravity="textStart"
                         app:iconPadding="0dp"
@@ -416,8 +440,8 @@
                         android:text="7"
                         android:textColor="#2D3335"
                         android:textSize="20sp"
-                        app:backgroundTint="#FFFFFF"
-                        app:cornerRadius="6dp" />
+                        app:backgroundTint="@color/app_background"
+                        app:cornerRadius="12dp" />
 
                 <com.google.android.material.button.MaterialButton
                         android:id="@+id/key_8"
@@ -432,8 +456,8 @@
                         android:text="8"
                         android:textColor="#2D3335"
                         android:textSize="20sp"
-                        app:backgroundTint="#FFFFFF"
-                        app:cornerRadius="6dp" />
+                        app:backgroundTint="@color/app_background"
+                        app:cornerRadius="12dp" />
 
                 <com.google.android.material.button.MaterialButton
                         android:id="@+id/key_9"
@@ -448,8 +472,8 @@
                         android:text="9"
                         android:textColor="#2D3335"
                         android:textSize="20sp"
-                        app:backgroundTint="#FFFFFF"
-                        app:cornerRadius="6dp" />
+                        app:backgroundTint="@color/app_background"
+                        app:cornerRadius="12dp" />
 
                 <com.google.android.material.button.MaterialButton
                         android:id="@+id/key_plus"
@@ -460,8 +484,8 @@
                         android:layout_weight="1"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"
-                        app:backgroundTint="#FFFFFF"
-                        app:cornerRadius="6dp"
+                        app:backgroundTint="@color/app_background"
+                        app:cornerRadius="12dp"
                         app:icon="@drawable/ic_editor_add_24"
                         app:iconGravity="textStart"
                         app:iconPadding="0dp"
@@ -483,13 +507,17 @@
                         android:fontFamily="sans-serif-medium"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"
+                        android:insetLeft="0dp"
+                        android:insetRight="0dp"
+                        android:padding="0dp"
+                        android:maxLines="1"
                         android:text="@string/transaction_key_again"
                         android:textAllCaps="false"
                         android:textColor="#2D3335"
                         android:textSize="14sp"
                         android:textStyle="bold"
-                        app:backgroundTint="#FFFFFF"
-                        app:cornerRadius="6dp" />
+                        app:backgroundTint="@color/app_background"
+                        app:cornerRadius="12dp" />
 
                 <com.google.android.material.button.MaterialButton
                         android:id="@+id/key_0"
@@ -504,8 +532,8 @@
                         android:text="0"
                         android:textColor="#2D3335"
                         android:textSize="20sp"
-                        app:backgroundTint="#FFFFFF"
-                        app:cornerRadius="6dp" />
+                        app:backgroundTint="@color/app_background"
+                        app:cornerRadius="12dp" />
 
                 <com.google.android.material.button.MaterialButton
                         android:id="@+id/key_dot"
@@ -522,8 +550,8 @@
                         android:textColor="#2D3335"
                         android:textSize="20sp"
                         android:textStyle="bold"
-                        app:backgroundTint="#FFFFFF"
-                        app:cornerRadius="6dp" />
+                        app:backgroundTint="@color/app_background"
+                        app:cornerRadius="12dp" />
 
                 <com.google.android.material.button.MaterialButton
                         android:id="@+id/key_save"
@@ -535,15 +563,20 @@
                         android:fontFamily="sans-serif-medium"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"
+                        android:insetLeft="0dp"
+                        android:insetRight="0dp"
+                        android:padding="0dp"
+                        android:maxLines="1"
                         android:text="@string/save"
                         android:textAllCaps="false"
                         android:textColor="#FFFFFF"
                         android:textSize="16sp"
                         android:textStyle="bold"
-                        app:backgroundTint="#EB5E5E"
-                        app:cornerRadius="6dp" />
+                        app:backgroundTint="#F87171"
+                        app:cornerRadius="12dp" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 </androidx.constraintlayout.widget.ConstraintLayout>
 
