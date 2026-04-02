@@ -1,6 +1,8 @@
 package com.example.account.ui.insights
 
 import android.os.Bundle
+import android.os.SystemClock
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -27,6 +29,7 @@ import org.json.JSONObject
 import java.time.Instant
 import java.time.YearMonth
 import java.time.ZoneId
+import java.util.Locale
 import kotlin.math.max
 import kotlin.math.min
 
@@ -37,6 +40,9 @@ class InsightsFragment : Fragment() {
     private var loadingView: View? = null
     private lateinit var viewModel: LedgerViewModel
     private var renderJob: Job? = null
+    private var fragmentStartNanos: Long = 0L
+    private var currentTraceId: Int = 0
+    private var currentPageLoadStartNanos: Long = 0L
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -46,6 +52,8 @@ class InsightsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        fragmentStartNanos = SystemClock.elapsedRealtimeNanos()
+        logStartup(currentTraceId, "onViewCreated")
 
         viewModel = ViewModelProvider(
             requireActivity(),
@@ -60,6 +68,7 @@ class InsightsFragment : Fragment() {
             if (!isAdded || this@InsightsFragment.view == null) {
                 return@post
             }
+            logStartup(currentTraceId, "view.post callback")
             ensureWebView()
             renderInsights()
         }
@@ -67,9 +76,11 @@ class InsightsFragment : Fragment() {
 
     private fun ensureWebView() {
         if (webView != null) {
+            logStartup(currentTraceId, "ensureWebView reused existing instance")
             return
         }
         val container = webContainer ?: return
+        val startNanos = SystemClock.elapsedRealtimeNanos()
         webView = WebView(requireContext()).apply {
             setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.app_background))
             overScrollMode = View.OVER_SCROLL_NEVER
@@ -79,11 +90,22 @@ class InsightsFragment : Fragment() {
             isHapticFeedbackEnabled = false
             setOnLongClickListener { true }
             webViewClient = object : WebViewClient() {
+                override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                    super.onPageStarted(view, url, favicon)
+                    logPagePhase("onPageStarted")
+                }
+
                 override fun onPageCommitVisible(view: WebView?, url: String?) {
+                    logPagePhase("onPageCommitVisible")
                     loadingView?.isVisible = false
                 }
+
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    super.onPageFinished(view, url)
+                    logPagePhase("onPageFinished")
+                }
             }
-            webChromeClient = WebChromeClient()
+            webChromeClient = object : WebChromeClient() {}
             addJavascriptInterface(object : Any() {
                 @android.webkit.JavascriptInterface
                 fun close() {
@@ -93,11 +115,17 @@ class InsightsFragment : Fragment() {
                         }
                     }
                 }
+
+                @android.webkit.JavascriptInterface
+                fun logTiming(message: String) {
+                    logStartup(currentTraceId, "web.$message")
+                }
             }, "Android")
             settings.apply {
                 javaScriptEnabled = true
                 domStorageEnabled = true
                 cacheMode = WebSettings.LOAD_DEFAULT
+                blockNetworkLoads = true
                 builtInZoomControls = false
                 displayZoomControls = false
                 loadWithOverviewMode = true
@@ -111,17 +139,26 @@ class InsightsFragment : Fragment() {
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
         )
+        logStep(currentTraceId, "ensureWebView", startNanos)
     }
 
     private fun renderInsights() {
         loadingView?.isVisible = true
         val appAssets = requireContext().applicationContext.assets
         renderJob?.cancel()
+        val traceId = ++currentTraceId
+        val renderStartNanos = SystemClock.elapsedRealtimeNanos()
+        logStartup(traceId, "renderInsights start")
         renderJob = viewLifecycleOwner.lifecycleScope.launch {
             val html = withContext(Dispatchers.Default) {
-                val template = loadTemplate(appAssets)
-                template.replace("{{DATA_JSON}}", buildPayload().toString())
+                val template = measure(traceId, "loadTemplate") { loadTemplate(appAssets) }
+                val payload = measure(traceId, "buildPayload") { buildPayload(traceId) }
+                measure(traceId, "mergeHtmlTemplate") {
+                    template.replace("{{DATA_JSON}}", payload.toString())
+                }
             }
+            logStep(traceId, "prepareHtml", renderStartNanos, "size=${html.length}")
+            currentPageLoadStartNanos = SystemClock.elapsedRealtimeNanos()
             webView?.loadDataWithBaseURL(
                 BASE_URL,
                 html,
@@ -129,26 +166,47 @@ class InsightsFragment : Fragment() {
                 "utf-8",
                 null
             )
+            logStartup(traceId, "loadDataWithBaseURL dispatched")
         }
     }
 
-    private fun buildPayload(): JSONObject {
-        val transactions = viewModel.getAllTransactions()
-        val categories = viewModel.getAllCategories()
+    private fun buildPayload(traceId: Int): JSONObject {
+        val localeTag = measure(traceId, "payload.currentLocaleTag") { currentLocaleTag() }
+        val transactions = measure(traceId, "payload.getAllTransactions") {
+            viewModel.getAllTransactions()
+        }
+        val categories = measure(traceId, "payload.getAllCategories") {
+            viewModel.getAllCategories()
+        }
         val context = requireContext()
-        return JSONObject().apply {
-            put("locale", currentLocaleTag())
-            put("transactions", JSONArray().apply {
+        val transactionsJson = measure(traceId, "payload.transactionsToJson") {
+            JSONArray().apply {
                 transactions.forEach { put(it.toJson()) }
-            })
-            put("categories", JSONArray().apply {
-                categories.forEach { put(it.toJson(context)) }
-            })
-            put("monthlyBudgets", buildMonthlyBudgets(transactions))
+            }
         }
+        val categoriesJson = measure(traceId, "payload.categoriesToJson") {
+            JSONArray().apply {
+                categories.forEach { put(it.toJson(context)) }
+            }
+        }
+        val monthlyBudgets = measure(traceId, "payload.buildMonthlyBudgets") {
+            buildMonthlyBudgets(traceId, transactions)
+        }
+        return JSONObject().apply {
+            put("locale", localeTag)
+            put("transactions", transactionsJson)
+            put("categories", categoriesJson)
+            put("monthlyBudgets", monthlyBudgets)
+        }
+            .also {
+                logStartup(
+                    traceId,
+                    "payload ready: transactions=${transactions.size}, categories=${categories.size}, budgets=${monthlyBudgets.length()}"
+                )
+            }
     }
 
-    private fun buildMonthlyBudgets(transactions: List<LedgerTransaction>): JSONObject {
+    private fun buildMonthlyBudgets(traceId: Int, transactions: List<LedgerTransaction>): JSONObject {
         val zoneId = ZoneId.systemDefault()
         val nowMonth = YearMonth.now(zoneId)
         var minYear = nowMonth.year
@@ -161,15 +219,21 @@ class InsightsFragment : Fragment() {
         }
 
         return JSONObject().apply {
+            var budgetMonths = 0
             for (year in minYear..maxYear) {
                 for (monthValue in 1..12) {
                     val month = YearMonth.of(year, monthValue)
                     val budget = viewModel.getMonthlyBudget(month)
                     if (budget != null && budget > 0.0) {
                         put(month.toString(), budget)
+                        budgetMonths++
                     }
                 }
             }
+            logStartup(
+                traceId,
+                "payload.buildMonthlyBudgets scannedYears=${maxYear - minYear + 1}, populatedMonths=$budgetMonths"
+            )
         }
     }
 
@@ -217,8 +281,9 @@ class InsightsFragment : Fragment() {
     }
 
     companion object {
+        private const val TAG = "InsightsPerf"
         private const val ASSET_FILE_NAME = "insights.html"
-        private const val BASE_URL = "https://appassets.androidplatform.net/"
+        private const val BASE_URL = "file:///android_asset/"
         @Volatile
         private var cachedTemplate: String? = null
 
@@ -237,5 +302,45 @@ class InsightsFragment : Fragment() {
         }
 
         fun newInstance(): InsightsFragment = InsightsFragment()
+    }
+
+    private inline fun <T> measure(traceId: Int, step: String, block: () -> T): T {
+        val startNanos = SystemClock.elapsedRealtimeNanos()
+        return block().also {
+            logStep(traceId, step, startNanos)
+        }
+    }
+
+    private fun logPagePhase(phase: String) {
+        val loadStart = currentPageLoadStartNanos
+        val total = if (loadStart == 0L) "" else " | since loadData=${elapsedMsString(loadStart)}"
+        logStartup(currentTraceId, "webView.$phase$total")
+    }
+
+    private fun logStep(traceId: Int, step: String, startNanos: Long, extra: String? = null) {
+        val detail = buildString {
+            append(step)
+            append(" took ")
+            append(elapsedMsString(startNanos))
+            append(" ms")
+            if (!extra.isNullOrBlank()) {
+                append(" | ")
+                append(extra)
+            }
+        }
+        logStartup(traceId, detail)
+    }
+
+    private fun logStartup(traceId: Int, message: String) {
+        val traceLabel = if (traceId > 0) "#$traceId" else "#-"
+        Log.d(
+            TAG,
+            "[$traceLabel +${elapsedMsString(fragmentStartNanos)} ms] $message"
+        )
+    }
+
+    private fun elapsedMsString(startNanos: Long): String {
+        val elapsedMs = (SystemClock.elapsedRealtimeNanos() - startNanos) / 1_000_000.0
+        return String.format(Locale.US, "%.1f", elapsedMs)
     }
 }
