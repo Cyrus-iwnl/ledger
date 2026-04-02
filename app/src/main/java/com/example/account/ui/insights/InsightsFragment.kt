@@ -84,6 +84,16 @@ class InsightsFragment : Fragment() {
                 }
             }
             webChromeClient = WebChromeClient()
+            addJavascriptInterface(object : Any() {
+                @android.webkit.JavascriptInterface
+                fun close() {
+                    activity?.runOnUiThread {
+                        if (isAdded) {
+                            parentFragmentManager.popBackStack()
+                        }
+                    }
+                }
+            }, "Android")
             settings.apply {
                 javaScriptEnabled = true
                 domStorageEnabled = true
