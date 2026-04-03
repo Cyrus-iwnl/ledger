@@ -89,6 +89,12 @@ class MainActivity : AppCompatActivity() {
 
     fun openInsights() {
         supportFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                R.anim.fragment_forward_enter,
+                R.anim.fragment_forward_exit,
+                R.anim.fragment_pop_enter,
+                R.anim.fragment_pop_exit
+            )
             .replace(
                 R.id.fragment_container,
                 InsightsFragment.newInstance(),

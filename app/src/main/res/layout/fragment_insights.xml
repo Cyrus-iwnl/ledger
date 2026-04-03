@@ -1,22 +1,1185 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/app_background"
+    android:background="@color/insights_surface"
+    android:clipChildren="false"
+    android:clipToPadding="false"
     android:fitsSystemWindows="true">
 
-    <FrameLayout
-        android:id="@+id/insights_webview_container"
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/insights_scroll"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/app_background" />
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:overScrollMode="never"
+        android:visibility="invisible">
 
-    <ProgressBar
-        android:id="@+id/insights_loading"
-        style="?android:attr/progressBarStyleLarge"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_gravity="center"
-        android:indeterminate="true" />
+        <LinearLayout
+            android:id="@+id/insights_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:orientation="vertical"
+            android:paddingStart="16dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="32dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <com.example.account.ui.insights.MaterialSymbolTextView
+                    android:id="@+id/insights_back_button"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:text="arrow_back"
+                    android:textColor="@color/insights_on_surface_variant"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/insights_page_title"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/manrope_family"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:text="Insights"
+                    android:textColor="@color/insights_on_surface"
+                    android:textFontWeight="800"
+                    android:textSize="17sp"
+                    android:letterSpacing="-0.025" />
+
+                <Space
+                    android:layout_width="40dp"
+                    android:layout_height="40dp" />
+            </LinearLayout>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/insights_controls_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/insights_surface_container"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/insights_surface_variant"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="8dp">
+
+                    <LinearLayout
+                        android:id="@+id/insights_granularity_group"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1.2"
+                        android:orientation="horizontal"
+                        android:baselineAligned="false"
+                        android:padding="4dp">
+
+                        <androidx.appcompat.widget.AppCompatButton
+                            android:id="@+id/insights_granularity_month"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:background="@android:color/transparent"
+                            android:fontFamily="@font/inter_family"
+                            android:gravity="center"
+                            android:includeFontPadding="false"
+                            android:minWidth="0dp"
+                            android:paddingStart="4dp"
+                            android:paddingEnd="4dp"
+                            android:text="Month"
+                            android:textAllCaps="false"
+                            android:textColor="@color/insights_on_primary"
+                            android:textFontWeight="700"
+                            android:textSize="12sp"
+                            android:letterSpacing="-0.025" />
+
+                        <androidx.appcompat.widget.AppCompatButton
+                            android:id="@+id/insights_granularity_year"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:background="@android:color/transparent"
+                            android:fontFamily="@font/inter_family"
+                            android:gravity="center"
+                            android:includeFontPadding="false"
+                            android:minWidth="0dp"
+                            android:paddingStart="4dp"
+                            android:paddingEnd="4dp"
+                            android:text="Year"
+                            android:textAllCaps="false"
+                            android:textColor="@color/insights_on_surface_variant"
+                            android:textFontWeight="700"
+                            android:textSize="12sp"
+                            android:letterSpacing="-0.025" />
+                    </LinearLayout>
+
+                    <FrameLayout
+                        android:id="@+id/insights_period_button"
+                        android:layout_width="0dp"
+                        android:layout_height="46dp"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:foreground="?attr/selectableItemBackgroundBorderless"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp">
+
+                        <TextView
+                            android:id="@+id/insights_period_display"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:fontFamily="@font/inter_family"
+                            android:gravity="center"
+                            android:includeFontPadding="false"
+                            android:maxLines="1"
+                            android:paddingEnd="24dp"
+                            android:text="Apr 2026"
+                            android:textColor="@color/insights_on_surface"
+                            android:textFontWeight="700"
+                            android:textSize="14sp" />
+
+                        <com.example.account.ui.insights.MaterialSymbolTextView
+                            android:id="@+id/insights_period_icon"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="end|center_vertical"
+                            android:gravity="center"
+                            android:includeFontPadding="false"
+                            android:text="calendar_month"
+                            android:textColor="@color/insights_primary"
+                            android:textSize="18sp" />
+                    </FrameLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/insights_balance_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/insights_surface_container_lowest"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp">
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <LinearLayout
+                        android:id="@+id/insights_balance_delta_badge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="top|end"
+                        android:layout_marginTop="16dp"
+                        android:layout_marginEnd="16dp"
+                        android:gravity="center"
+                        android:orientation="horizontal"
+                        android:paddingStart="6dp"
+                        android:paddingTop="4dp"
+                        android:paddingEnd="6dp"
+                        android:paddingBottom="4dp">
+
+                        <com.example.account.ui.insights.MaterialSymbolTextView
+                            android:id="@+id/insights_balance_delta_icon"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:includeFontPadding="false"
+                            android:text="trending_up"
+                            android:textColor="@color/insights_error_container"
+                            android:textSize="10sp" />
+
+                        <TextView
+                            android:id="@+id/insights_balance_delta_percent"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:fontFamily="@font/inter_family"
+                            android:gravity="center"
+                            android:includeFontPadding="false"
+                            android:maxLines="1"
+                            android:text="0%"
+                            android:textColor="@color/insights_on_surface"
+                            android:textFontWeight="700"
+                            android:textSize="10sp" />
+
+                        <TextView
+                            android:id="@+id/insights_balance_delta_label"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:fontFamily="@font/inter_family"
+                            android:gravity="center"
+                            android:includeFontPadding="false"
+                            android:maxLines="1"
+                            android:text="MoM"
+                            android:textColor="@color/insights_on_surface_variant"
+                            android:textFontWeight="600"
+                            android:textSize="9sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingStart="32dp"
+                        android:paddingTop="24dp"
+                        android:paddingEnd="32dp"
+                        android:paddingBottom="24dp">
+
+                        <TextView
+                            android:id="@+id/insights_balance_label"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="8dp"
+                            android:fontFamily="@font/inter_family"
+                            android:includeFontPadding="false"
+                            android:maxLines="1"
+                            android:text="Remaining Balance"
+                            android:textAllCaps="true"
+                            android:textColor="@color/insights_on_surface_variant"
+                            android:textFontWeight="700"
+                            android:textSize="13sp"
+                            android:letterSpacing="0.025" />
+
+                        <TextView
+                            android:id="@+id/insights_remaining_balance"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:autoSizeMaxTextSize="44sp"
+                            android:autoSizeMinTextSize="18sp"
+                            android:autoSizeStepGranularity="1sp"
+                            android:autoSizeTextType="uniform"
+                            android:fontFamily="@font/manrope_family"
+                            android:gravity="center"
+                            android:includeFontPadding="false"
+                            android:maxLines="1"
+                            android:text="�?.00"
+                            android:textColor="@color/insights_on_surface"
+                            android:textFontWeight="800"
+                            android:textSize="44sp"
+                            android:letterSpacing="-0.025" />
+                    </LinearLayout>
+                </FrameLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:baselineAligned="false"
+                android:orientation="horizontal">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/insights_expense_card"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    app:cardBackgroundColor="@color/insights_surface_container_lowest"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/insights_red_100"
+                    app:strokeWidth="1dp">
+
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:paddingStart="16dp"
+                            android:paddingTop="20dp"
+                            android:paddingEnd="20dp"
+                            android:paddingBottom="20dp">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="8dp"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <FrameLayout
+                                    android:id="@+id/insights_expense_icon_box"
+                                    android:layout_width="24dp"
+                                    android:layout_height="36dp">
+
+                                    <com.example.account.ui.insights.MaterialSymbolTextView
+                                        android:id="@+id/insights_expense_icon"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="match_parent"
+                                        android:gravity="center"
+                                        android:includeFontPadding="false"
+                                        android:text="arrow_upward"
+                                        android:textColor="@color/insights_red_400"
+                                        android:textSize="14sp" />
+                                </FrameLayout>
+
+                                <TextView
+                                    android:id="@+id/insights_expense_label"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="8dp"
+                                    android:layout_marginEnd="16dp"
+                                    android:layout_weight="1"
+                                    android:fontFamily="@font/inter_family"
+                                    android:includeFontPadding="false"
+                                    android:gravity="start|center_vertical"
+                                    android:maxLines="2"
+                                    android:text="Total Expense"
+                                    android:textAllCaps="true"
+                                    android:textColor="@color/insights_on_surface_variant"
+                                    android:textFontWeight="700"
+                                    android:textSize="10sp"
+                                    android:letterSpacing="0.025" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/insights_expense_amount"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:autoSizeMaxTextSize="20sp"
+                                android:autoSizeMinTextSize="10sp"
+                                android:autoSizeStepGranularity="1sp"
+                                android:autoSizeTextType="uniform"
+                                android:fontFamily="@font/manrope_family"
+                                android:gravity="start"
+                                android:includeFontPadding="false"
+                                android:maxLines="1"
+                                android:text="�?.00"
+                                android:textColor="@color/insights_on_surface"
+                                android:textFontWeight="800"
+                                android:textSize="20sp" />
+
+                            <FrameLayout
+                                android:id="@+id/insights_expense_progress_track"
+                                android:layout_width="match_parent"
+                                android:layout_height="4dp"
+                                android:layout_marginTop="8dp">
+
+                                <View
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent" />
+                            </FrameLayout>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/insights_expense_delta_badge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="top|end"
+                            android:layout_marginTop="14dp"
+                            android:layout_marginEnd="10dp"
+                            android:gravity="center"
+                            android:orientation="horizontal"
+                            android:paddingStart="5dp"
+                            android:paddingTop="3dp"
+                            android:paddingEnd="5dp"
+                            android:paddingBottom="3dp">
+
+                            <com.example.account.ui.insights.MaterialSymbolTextView
+                                android:id="@+id/insights_expense_delta_icon"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:includeFontPadding="false"
+                                android:text="trending_up"
+                                android:textColor="@color/insights_error_container"
+                                android:textSize="10sp" />
+
+                            <TextView
+                                android:id="@+id/insights_expense_delta_percent"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="2dp"
+                                android:fontFamily="@font/inter_family"
+                                android:gravity="center"
+                                android:includeFontPadding="false"
+                                android:maxLines="1"
+                                android:text="0%"
+                                android:textColor="@color/insights_on_surface"
+                                android:textFontWeight="700"
+                                android:textSize="10sp" />
+                        </LinearLayout>
+                    </FrameLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <Space
+                    android:layout_width="16dp"
+                    android:layout_height="1dp" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/insights_income_card"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    app:cardBackgroundColor="@color/insights_surface_container_lowest"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/insights_green_100"
+                    app:strokeWidth="1dp">
+
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:paddingStart="16dp"
+                            android:paddingTop="20dp"
+                            android:paddingEnd="20dp"
+                            android:paddingBottom="20dp">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="8dp"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <FrameLayout
+                                    android:id="@+id/insights_income_icon_box"
+                                    android:layout_width="24dp"
+                                    android:layout_height="36dp">
+
+                                    <com.example.account.ui.insights.MaterialSymbolTextView
+                                        android:id="@+id/insights_income_icon"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="match_parent"
+                                        android:gravity="center"
+                                        android:includeFontPadding="false"
+                                        android:text="arrow_downward"
+                                        android:textColor="@color/insights_green_600"
+                                        android:textSize="14sp" />
+                                </FrameLayout>
+
+                                <TextView
+                                    android:id="@+id/insights_income_label"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="8dp"
+                                    android:layout_marginEnd="16dp"
+                                    android:layout_weight="1"
+                                    android:fontFamily="@font/inter_family"
+                                    android:includeFontPadding="false"
+                                    android:gravity="start|center_vertical"
+                                    android:maxLines="2"
+                                    android:text="Total Income"
+                                    android:textAllCaps="true"
+                                    android:textColor="@color/insights_on_surface_variant"
+                                    android:textFontWeight="700"
+                                    android:textSize="10sp"
+                                    android:letterSpacing="0.025" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/insights_income_amount"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:autoSizeMaxTextSize="20sp"
+                                android:autoSizeMinTextSize="10sp"
+                                android:autoSizeStepGranularity="1sp"
+                                android:autoSizeTextType="uniform"
+                                android:fontFamily="@font/manrope_family"
+                                android:gravity="start"
+                                android:includeFontPadding="false"
+                                android:maxLines="1"
+                                android:text="�?.00"
+                                android:textColor="@color/insights_on_surface"
+                                android:textFontWeight="800"
+                                android:textSize="20sp" />
+
+                            <FrameLayout
+                                android:id="@+id/insights_income_progress_track"
+                                android:layout_width="match_parent"
+                                android:layout_height="4dp"
+                                android:layout_marginTop="8dp">
+
+                                <View
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent" />
+                            </FrameLayout>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/insights_income_delta_badge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="top|end"
+                            android:layout_marginTop="14dp"
+                            android:layout_marginEnd="10dp"
+                            android:gravity="center"
+                            android:orientation="horizontal"
+                            android:paddingStart="5dp"
+                            android:paddingTop="3dp"
+                            android:paddingEnd="5dp"
+                            android:paddingBottom="3dp">
+
+                            <com.example.account.ui.insights.MaterialSymbolTextView
+                                android:id="@+id/insights_income_delta_icon"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:includeFontPadding="false"
+                                android:text="trending_up"
+                                android:textColor="@color/insights_green_600"
+                                android:textSize="10sp" />
+
+                            <TextView
+                                android:id="@+id/insights_income_delta_percent"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="2dp"
+                                android:fontFamily="@font/inter_family"
+                                android:gravity="center"
+                                android:includeFontPadding="false"
+                                android:maxLines="1"
+                                android:text="0%"
+                                android:textColor="@color/insights_on_surface"
+                                android:textFontWeight="700"
+                                android:textSize="10sp" />
+                        </LinearLayout>
+                    </FrameLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/insights_metrics_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/insights_surface_container_lowest"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:id="@+id/insights_metrics_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:fontFamily="@font/manrope_family"
+                        android:includeFontPadding="false"
+                        android:text="Metrics"
+                        android:textColor="@color/insights_on_surface"
+                        android:textFontWeight="700"
+                        android:textSize="18sp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:baselineAligned="false"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:id="@+id/insights_metric_savings_card"
+                            android:layout_width="0dp"
+                            android:layout_height="116dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:padding="12dp">
+
+                            <TextView
+                                android:id="@+id/insights_metric_savings_label"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/inter_family"
+                                android:includeFontPadding="false"
+                                android:text="Savings Rate"
+                                android:textAllCaps="true"
+                                android:textColor="@color/insights_on_surface_variant"
+                                android:textFontWeight="700"
+                                android:textSize="10sp"
+                                android:letterSpacing="0.1" />
+
+                            <TextView
+                                android:id="@+id/insights_metric_savings_value"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:fontFamily="@font/manrope_family"
+                                android:includeFontPadding="false"
+                                android:text="--"
+                                android:textColor="@color/insights_on_surface"
+                                android:textFontWeight="800"
+                                android:textSize="18sp" />
+
+                            <TextView
+                                android:id="@+id/insights_metric_savings_sub"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:fontFamily="@font/inter_family"
+                                android:includeFontPadding="false"
+                                android:text="No income data"
+                                android:textColor="@color/insights_on_surface_variant"
+                                android:textSize="10sp" />
+                        </LinearLayout>
+
+                        <Space
+                            android:layout_width="12dp"
+                            android:layout_height="1dp" />
+
+                        <LinearLayout
+                            android:id="@+id/insights_metric_budget_card"
+                            android:layout_width="0dp"
+                            android:layout_height="116dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:padding="12dp">
+
+                            <TextView
+                                android:id="@+id/insights_metric_budget_label"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/inter_family"
+                                android:includeFontPadding="false"
+                                android:text="Budget Forecast"
+                                android:textAllCaps="true"
+                                android:textColor="@color/insights_on_surface_variant"
+                                android:textFontWeight="700"
+                                android:textSize="9sp"
+                                android:letterSpacing="0.1" />
+
+                            <TextView
+                                android:id="@+id/insights_metric_budget_value"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:fontFamily="@font/manrope_family"
+                                android:includeFontPadding="false"
+                                android:text="--"
+                                android:textColor="@color/insights_on_surface"
+                                android:textFontWeight="800"
+                                android:textSize="18sp" />
+
+                            <TextView
+                                android:id="@+id/insights_metric_budget_sub"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:fontFamily="@font/inter_family"
+                                android:includeFontPadding="false"
+                                android:text="No budget set"
+                                android:textColor="@color/insights_on_surface_variant"
+                                android:textSize="10sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <Space
+                        android:layout_width="1dp"
+                        android:layout_height="12dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:baselineAligned="false"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:id="@+id/insights_metric_expense_activity_card"
+                            android:layout_width="0dp"
+                            android:layout_height="116dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:padding="12dp">
+
+                            <TextView
+                                android:id="@+id/insights_metric_expense_activity_label"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/inter_family"
+                                android:includeFontPadding="false"
+                                android:text="Expense Activity"
+                                android:textAllCaps="true"
+                                android:textColor="@color/insights_on_surface_variant"
+                                android:textFontWeight="700"
+                                android:textSize="9sp"
+                                android:letterSpacing="0.1" />
+
+                            <TextView
+                                android:id="@+id/insights_metric_expense_activity_value"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:fontFamily="@font/manrope_family"
+                                android:includeFontPadding="false"
+                                android:text="0 tx"
+                                android:textColor="@color/insights_on_surface"
+                                android:textFontWeight="800"
+                                android:textSize="18sp" />
+
+                            <TextView
+                                android:id="@+id/insights_metric_expense_activity_sub"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:fontFamily="@font/inter_family"
+                                android:includeFontPadding="false"
+                                android:text="Avg ticket �?"
+                                android:textColor="@color/insights_on_surface_variant"
+                                android:textSize="10sp" />
+                        </LinearLayout>
+
+                        <Space
+                            android:layout_width="12dp"
+                            android:layout_height="1dp" />
+
+                        <LinearLayout
+                            android:id="@+id/insights_metric_income_activity_card"
+                            android:layout_width="0dp"
+                            android:layout_height="116dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:padding="12dp">
+
+                            <TextView
+                                android:id="@+id/insights_metric_income_activity_label"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/inter_family"
+                                android:includeFontPadding="false"
+                                android:text="Income Activity"
+                                android:textAllCaps="true"
+                                android:textColor="@color/insights_on_surface_variant"
+                                android:textFontWeight="700"
+                                android:textSize="9sp"
+                                android:letterSpacing="0.1" />
+
+                            <TextView
+                                android:id="@+id/insights_metric_income_activity_value"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:fontFamily="@font/manrope_family"
+                                android:includeFontPadding="false"
+                                android:text="0 tx"
+                                android:textColor="@color/insights_on_surface"
+                                android:textFontWeight="800"
+                                android:textSize="18sp" />
+
+                            <TextView
+                                android:id="@+id/insights_metric_income_activity_sub"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:fontFamily="@font/inter_family"
+                                android:includeFontPadding="false"
+                                android:text="Avg ticket �?"
+                                android:textColor="@color/insights_on_surface_variant"
+                                android:textSize="10sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <Space
+                        android:layout_width="1dp"
+                        android:layout_height="12dp" />
+
+                    <LinearLayout
+                        android:id="@+id/insights_metric_anomaly_card"
+                        android:layout_width="match_parent"
+                        android:layout_height="116dp"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <TextView
+                            android:id="@+id/insights_metric_anomaly_label"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/inter_family"
+                            android:includeFontPadding="false"
+                            android:text="Anomaly"
+                            android:textAllCaps="true"
+                            android:textColor="@color/insights_on_surface_variant"
+                            android:textFontWeight="700"
+                            android:textSize="10sp"
+                            android:letterSpacing="0.1" />
+
+                        <TextView
+                            android:id="@+id/insights_metric_anomaly_value"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:fontFamily="@font/manrope_family"
+                            android:includeFontPadding="false"
+                            android:text="0 tx"
+                            android:textColor="@color/insights_on_surface"
+                            android:textFontWeight="800"
+                            android:textSize="18sp" />
+
+                        <TextView
+                            android:id="@+id/insights_metric_anomaly_sub"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:fontFamily="@font/inter_family"
+                            android:includeFontPadding="false"
+                            android:text="No obvious anomalies"
+                            android:textColor="@color/insights_on_surface_variant"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/insights_trend_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/insights_surface_container_lowest"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
+                    android:orientation="vertical"
+                    android:paddingTop="24dp"
+                    android:paddingBottom="24dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="24dp"
+                        android:layout_marginEnd="24dp"
+                        android:layout_marginBottom="24dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/insights_trend_title"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/manrope_family"
+                            android:includeFontPadding="false"
+                            android:text="Trend"
+                            android:textColor="@color/insights_on_surface"
+                            android:textFontWeight="700"
+                            android:textSize="18sp" />
+
+                        <LinearLayout
+                            android:id="@+id/insights_trend_metric_group"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:padding="4dp">
+
+                            <androidx.appcompat.widget.AppCompatButton
+                                android:id="@+id/insights_trend_metric_expense"
+                                android:layout_width="60dp"
+                                android:layout_height="32dp"
+                                android:background="@android:color/transparent"
+                                android:fontFamily="@font/inter_family"
+                                android:includeFontPadding="false"
+                                android:minWidth="0dp"
+                                android:text="Expense"
+                                android:textColor="@color/insights_on_surface"
+                                android:textFontWeight="700"
+                                android:textSize="10sp" />
+
+                            <androidx.appcompat.widget.AppCompatButton
+                                android:id="@+id/insights_trend_metric_income"
+                                android:layout_width="60dp"
+                                android:layout_height="32dp"
+                                android:background="@android:color/transparent"
+                                android:fontFamily="@font/inter_family"
+                                android:includeFontPadding="false"
+                                android:minWidth="0dp"
+                                android:text="Income"
+                                android:textColor="@color/insights_on_surface_variant"
+                                android:textFontWeight="600"
+                                android:textSize="10sp" />
+
+                            <androidx.appcompat.widget.AppCompatButton
+                                android:id="@+id/insights_trend_metric_balance"
+                                android:layout_width="60dp"
+                                android:layout_height="32dp"
+                                android:background="@android:color/transparent"
+                                android:fontFamily="@font/inter_family"
+                                android:includeFontPadding="false"
+                                android:minWidth="0dp"
+                                android:text="Balance"
+                                android:textColor="@color/insights_on_surface_variant"
+                                android:textFontWeight="600"
+                                android:textSize="10sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <com.example.account.ui.insights.InsightsTrendChartView
+                        android:id="@+id/insights_trend_chart"
+                        android:layout_width="match_parent"
+                        android:layout_height="220dp"
+                        android:layout_marginStart="0dp"
+                        android:layout_marginEnd="0dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/insights_category_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/insights_surface_container_lowest"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
+                    android:orientation="vertical"
+                    android:padding="24dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="24dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/insights_category_title"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/manrope_family"
+                            android:includeFontPadding="false"
+                            android:text="Category"
+                            android:textColor="@color/insights_on_surface"
+                            android:textFontWeight="700"
+                            android:textSize="18sp" />
+
+                        <LinearLayout
+                            android:id="@+id/insights_category_type_group"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:padding="4dp">
+
+                            <androidx.appcompat.widget.AppCompatButton
+                                android:id="@+id/insights_category_type_expense"
+                                android:layout_width="60dp"
+                                android:layout_height="32dp"
+                                android:background="@android:color/transparent"
+                                android:fontFamily="@font/inter_family"
+                                android:includeFontPadding="false"
+                                android:minWidth="0dp"
+                                android:text="Expense"
+                                android:textColor="@color/insights_on_surface"
+                                android:textFontWeight="700"
+                                android:textSize="10sp" />
+
+                            <androidx.appcompat.widget.AppCompatButton
+                                android:id="@+id/insights_category_type_income"
+                                android:layout_width="60dp"
+                                android:layout_height="32dp"
+                                android:background="@android:color/transparent"
+                                android:fontFamily="@font/inter_family"
+                                android:includeFontPadding="false"
+                                android:minWidth="0dp"
+                                android:text="Income"
+                                android:textColor="@color/insights_on_surface_variant"
+                                android:textFontWeight="600"
+                                android:textSize="10sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="210dp"
+                        android:layout_marginBottom="40dp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false">
+
+                        <com.example.account.ui.insights.InsightsDonutChartView
+                            android:id="@+id/insights_donut_chart"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent" />
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/insights_donut_label"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/inter_family"
+                                android:includeFontPadding="false"
+                                android:text="Total"
+                                android:textAllCaps="true"
+                                android:textColor="@color/insights_on_surface_variant"
+                                android:textFontWeight="700"
+                                android:textSize="10sp"
+                                android:letterSpacing="0.1" />
+
+                            <TextView
+                                android:id="@+id/insights_donut_total"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:fontFamily="@font/manrope_family"
+                                android:includeFontPadding="false"
+                                android:maxLines="1"
+                                android:text="�?.00"
+                                android:textColor="@color/insights_on_surface"
+                                android:textFontWeight="700"
+                                android:textSize="24sp" />
+                        </LinearLayout>
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:id="@+id/insights_category_items"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+
+                    <androidx.appcompat.widget.AppCompatButton
+                        android:id="@+id/insights_category_toggle"
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:layout_marginTop="20dp"
+                        android:background="@android:color/transparent"
+                        android:fontFamily="@font/inter_family"
+                        android:includeFontPadding="false"
+                        android:minWidth="0dp"
+                        android:text="Show More"
+                        android:textColor="@color/insights_on_surface_variant"
+                        android:textFontWeight="700"
+                        android:textSize="11sp"
+                        android:visibility="gone" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/insights_calendar_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardBackgroundColor="@color/insights_surface_container_lowest"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingStart="12dp"
+                    android:paddingTop="24dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="24dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_marginEnd="12dp"
+                        android:layout_marginBottom="24dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/insights_calendar_title"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/manrope_family"
+                            android:includeFontPadding="false"
+                            android:text="Calendar"
+                            android:textColor="@color/insights_on_surface"
+                            android:textFontWeight="700"
+                            android:textSize="18sp" />
+
+                        <LinearLayout
+                            android:id="@+id/insights_calendar_metric_group"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:padding="4dp">
+
+                            <androidx.appcompat.widget.AppCompatButton
+                                android:id="@+id/insights_calendar_metric_expense"
+                                android:layout_width="60dp"
+                                android:layout_height="32dp"
+                                android:background="@android:color/transparent"
+                                android:fontFamily="@font/inter_family"
+                                android:includeFontPadding="false"
+                                android:minWidth="0dp"
+                                android:text="Expense"
+                                android:textColor="@color/insights_on_surface"
+                                android:textFontWeight="700"
+                                android:textSize="10sp" />
+
+                            <androidx.appcompat.widget.AppCompatButton
+                                android:id="@+id/insights_calendar_metric_income"
+                                android:layout_width="60dp"
+                                android:layout_height="32dp"
+                                android:background="@android:color/transparent"
+                                android:fontFamily="@font/inter_family"
+                                android:includeFontPadding="false"
+                                android:minWidth="0dp"
+                                android:text="Income"
+                                android:textColor="@color/insights_on_surface_variant"
+                                android:textFontWeight="600"
+                                android:textSize="10sp" />
+
+                            <androidx.appcompat.widget.AppCompatButton
+                                android:id="@+id/insights_calendar_metric_balance"
+                                android:layout_width="60dp"
+                                android:layout_height="32dp"
+                                android:background="@android:color/transparent"
+                                android:fontFamily="@font/inter_family"
+                                android:includeFontPadding="false"
+                                android:minWidth="0dp"
+                                android:text="Balance"
+                                android:textColor="@color/insights_on_surface_variant"
+                                android:textFontWeight="600"
+                                android:textSize="10sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/insights_calendar_weekdays"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
+                        android:orientation="horizontal" />
+
+                    <GridLayout
+                        android:id="@+id/insights_calendar_grid"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:columnCount="7"
+                        android:orientation="horizontal" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 
 </FrameLayout>

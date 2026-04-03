@@ -21,6 +21,7 @@ node_modules/
 
 # Temp / caches
 .tmp-fonts/
+.tmp-gradle/
 
 # OS
 .DS_Store

@@ -23,6 +23,10 @@ import com.example.account.data.LedgerViewModel
 import com.example.account.data.TransactionType
 import com.example.account.databinding.FragmentHomeBinding
 import com.example.account.ui.DialogFactory
+import com.example.account.ui.insights.insightsNumberLocale
+import com.example.account.ui.insights.insightsText
+import com.example.account.ui.insights.normalizeInsightsLocaleTag
+import com.example.account.ui.period.PeriodPickerDialogFragment
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import java.text.DecimalFormat
@@ -30,6 +34,7 @@ import java.time.Instant
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -42,7 +47,6 @@ class HomeFragment : Fragment() {
     private lateinit var adapter: HomeDayAdapter
     private val amountFormat = DecimalFormat("#,##0.00")
     private val budgetInputPattern = Regex("^\\d+(\\.\\d{1,2})?$")
-    private val monthFormat = DateTimeFormatter.ofPattern("MMM yyyy", Locale.getDefault())
     private val transactionTimeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.getDefault())
     private var latestDashboard: LedgerDashboard? = null
     private var monthlyBudgetCap: Double? = null
@@ -50,6 +54,9 @@ class HomeFragment : Fragment() {
     private var selectedWindowDays: Int = 15
     private var trendDisplayMode: TrendDisplayMode = TrendDisplayMode.BOTH
     private var selectedTrendDayLabel: String? = null
+    private var localeTag: String = "en"
+    private var numberLocale: Locale = Locale.US
+    private var monthWord: String = "Month"
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -68,7 +75,11 @@ class HomeFragment : Fragment() {
             LedgerViewModel.Factory(requireActivity().application)
         )[LedgerViewModel::class.java]
 
-        binding.monthSelector.text = selectedMonth.format(monthFormat)
+        localeTag = normalizeInsightsLocaleTag(resources.configuration.locales[0]?.toLanguageTag())
+        numberLocale = insightsNumberLocale(localeTag)
+        monthWord = insightsText(localeTag).month
+
+        binding.monthSelector.text = formatSelectedMonth()
         monthlyBudgetCap = viewModel.getMonthlyBudget(selectedMonth)
         viewModel.loadMonthlyBudget(selectedMonth)
         viewModel.setDashboardMonth(selectedMonth)
@@ -129,17 +140,17 @@ class HomeFragment : Fragment() {
         }
 
         parentFragmentManager.setFragmentResultListener(
-            MonthPickerDialogFragment.REQUEST_KEY,
+            HOME_PERIOD_PICKER_REQUEST_KEY,
             viewLifecycleOwner
         ) { _, bundle ->
-            val year = bundle.getInt(MonthPickerDialogFragment.RESULT_YEAR)
-            val monthIndex = bundle.getInt(MonthPickerDialogFragment.RESULT_MONTH_INDEX)
+            val year = bundle.getInt(PeriodPickerDialogFragment.RESULT_YEAR, selectedMonth.year)
+            val monthIndex = bundle.getInt(PeriodPickerDialogFragment.RESULT_MONTH_INDEX, selectedMonth.monthValue - 1)
             val month = YearMonth.of(year, monthIndex + 1)
             if (month == selectedMonth) {
                 return@setFragmentResultListener
             }
             selectedMonth = month
-            binding.monthSelector.text = selectedMonth.format(monthFormat)
+            binding.monthSelector.text = formatSelectedMonth()
             monthlyBudgetCap = viewModel.getMonthlyBudget(selectedMonth)
             viewModel.loadMonthlyBudget(selectedMonth)
             viewModel.setDashboardMonth(selectedMonth)
@@ -335,7 +346,7 @@ class HomeFragment : Fragment() {
 
         inputLayout.hint = getString(
             R.string.home_budget_for_month_format,
-            selectedMonth.format(monthFormat)
+            formatSelectedMonth()
         )
         val existingBudget = monthlyBudgetCap?.takeIf { it > 0.0 }
         input.setText(
@@ -388,9 +399,19 @@ class HomeFragment : Fragment() {
     }
 
     private fun openMonthPicker() {
-        MonthPickerDialogFragment
-            .newInstance(selectedMonth.year, selectedMonth.monthValue - 1)
-            .show(parentFragmentManager, "home_month_picker")
+        val pickerText = insightsText(localeTag)
+        PeriodPickerDialogFragment
+            .newMonthPicker(
+                requestKey = HOME_PERIOD_PICKER_REQUEST_KEY,
+                selectedYear = selectedMonth.year,
+                selectedMonthIndex = selectedMonth.monthValue - 1,
+                displayYear = selectedMonth.year,
+                localeTag = localeTag,
+                monthWord = monthWord,
+                title = pickerText.selectMonth,
+                closeText = pickerText.close
+            )
+            .show(parentFragmentManager, "home_period_picker")
     }
 
     private fun showTransactionActions(transactionId: Long) {
@@ -441,6 +462,20 @@ class HomeFragment : Fragment() {
             .format(transactionTimeFormat)
     }
 
+    private fun formatSelectedMonth(): String {
+        return if (localeTag == "en") {
+            val monthLabel = selectedMonth.month
+                .getDisplayName(TextStyle.SHORT, numberLocale)
+                .lowercase(numberLocale)
+                .replaceFirstChar { first ->
+                    if (first.isLowerCase()) first.titlecase(numberLocale) else first.toString()
+                }
+            "$monthLabel ${selectedMonth.year}"
+        } else {
+            selectedMonth.format(DateTimeFormatter.ofPattern("yyyy/M", numberLocale))
+        }
+    }
+
     override fun onResume() {
         super.onResume()
         applyHomeSystemBars()
@@ -462,6 +497,8 @@ class HomeFragment : Fragment() {
     }
 
     companion object {
+        private const val HOME_PERIOD_PICKER_REQUEST_KEY = "home_period_picker_result"
+
         fun newInstance(): HomeFragment = HomeFragment()
     }
 

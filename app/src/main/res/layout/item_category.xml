@@ -4,24 +4,24 @@
               xmlns:tools="http://schemas.android.com/tools"
               android:id="@+id/category_root"
               android:layout_width="match_parent"
-              android:layout_height="wrap_content"
+              android:layout_height="match_parent"
               android:gravity="center"
               android:orientation="vertical"
-              android:paddingStart="1dp"
+              android:paddingStart="2dp"
               android:paddingTop="2dp"
-              android:paddingEnd="1dp"
+              android:paddingEnd="2dp"
               android:paddingBottom="2dp">
 
     <FrameLayout
             android:id="@+id/category_icon_container"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:background="@drawable/bg_editor_category_icon_unselected">
 
         <ImageView
                 android:id="@+id/category_icon_image"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:layout_gravity="center"
                 android:contentDescription="@null"
                 android:tint="@color/editor_on_surface_variant"
@@ -40,16 +40,16 @@
                 android:includeFontPadding="false"
                 android:letterSpacing="0"
                 android:textColor="@color/editor_on_surface_variant"
-                android:textSize="25sp"
+                android:textSize="21sp"
                 android:visibility="gone"
                 tools:text="restaurant" />
     </FrameLayout>
 
     <TextView
             android:id="@+id/category_name"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="0dp"
+            android:layout_marginTop="4dp"
             android:ellipsize="end"
             android:fontFamily="sans-serif-medium"
             android:gravity="center"
@@ -59,7 +59,7 @@
             android:singleLine="true"
             android:text="@string/category_meals"
             android:textColor="@color/editor_on_surface_variant"
-            android:textSize="13sp"
+            android:textSize="12sp"
             android:textStyle="normal" />
 
 </LinearLayout>

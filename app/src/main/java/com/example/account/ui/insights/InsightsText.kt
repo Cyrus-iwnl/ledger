@@ -1,0 +1,238 @@
+package com.example.account.ui.insights
+
+import java.util.Locale
+
+data class InsightsText(
+    val insightsTitle: String,
+    val month: String,
+    val year: String,
+    val selectPeriod: String,
+    val selectYear: String,
+    val selectMonth: String,
+    val close: String,
+    val remainingBalance: String,
+    val vsLastMonth: String,
+    val vsLastYear: String,
+    val totalExpense: String,
+    val totalIncome: String,
+    val metrics: String,
+    val savingsRate: String,
+    val budgetForecast: String,
+    val expenseActivity: String,
+    val incomeActivity: String,
+    val anomaly: String,
+    val noIncomeData: String,
+    val noBudgetSet: String,
+    val noObviousAnomalies: String,
+    val trend: String,
+    val expense: String,
+    val income: String,
+    val balance: String,
+    val category: String,
+    val total: String,
+    val showMore: String,
+    val showLess: String,
+    val calendar: String,
+    val other: String,
+    val noData: String,
+    val netBalance: String,
+    val txCount: String,
+    val avgTicket: String,
+    val dailyAvg: String,
+    val monthlyAvg: String,
+    val activeDays: String,
+    val budgetNotSet: String,
+    val forecastLeft: String,
+    val forecastOver: String,
+    val budget: String,
+    val aboveBaseline: String,
+    val highAmountAlert: String,
+    val alreadyOverBudget: String,
+    val alreadyOverAnnualBudget: String,
+    val overOn: String,
+    val overIn: String,
+    val weekdays: List<String>
+) {
+    fun format(template: String, params: Map<String, Any>): String {
+        var result = template
+        params.forEach { (key, value) ->
+            result = result.replace("{$key}", value.toString())
+        }
+        return result
+    }
+}
+
+fun normalizeInsightsLocaleTag(raw: String?): String {
+    val value = raw.orEmpty().lowercase(Locale.US)
+    return when {
+        value.startsWith("zh-tw") || value.startsWith("zh-hk") || value.startsWith("zh-mo") || value.contains("hant") -> "zh-TW"
+        value.startsWith("zh") -> "zh-CN"
+        else -> "en"
+    }
+}
+
+fun insightsNumberLocale(localeTag: String): Locale {
+    return when (localeTag) {
+        "zh-CN" -> Locale.SIMPLIFIED_CHINESE
+        "zh-TW" -> Locale.TRADITIONAL_CHINESE
+        else -> Locale.US
+    }
+}
+
+fun insightsText(localeTag: String): InsightsText {
+    return when (localeTag) {
+        "zh-CN" -> InsightsText(
+            insightsTitle = "洞察",
+            month = "月",
+            year = "年",
+            selectPeriod = "选择周期",
+            selectYear = "选择年份",
+            selectMonth = "选择月份",
+            close = "关闭",
+            remainingBalance = "结余",
+            vsLastMonth = "MoM",
+            vsLastYear = "YoY",
+            totalExpense = "总支出",
+            totalIncome = "总收入",
+            metrics = "指标",
+            savingsRate = "储蓄率",
+            budgetForecast = "预算预测",
+            expenseActivity = "支出活跃度",
+            incomeActivity = "收入活跃度",
+            anomaly = "异常",
+            noIncomeData = "暂无收入数据",
+            noBudgetSet = "未设置预算",
+            noObviousAnomalies = "暂无明显异常",
+            trend = "趋势",
+            expense = "支出",
+            income = "收入",
+            balance = "结余",
+            category = "分类",
+            total = "总计",
+            showMore = "展开更多",
+            showLess = "收起",
+            calendar = "日历",
+            other = "其他",
+            noData = "暂无数据",
+            netBalance = "净结余 {amount}",
+            txCount = "{count} 笔",
+            avgTicket = "单笔均值 {amount}",
+            dailyAvg = "日均 {amount}",
+            monthlyAvg = "月均 {amount}",
+            activeDays = "活跃 {days} 天",
+            budgetNotSet = "未设置预算",
+            forecastLeft = "预计剩余 {amount}",
+            forecastOver = "预计超出 {amount}",
+            budget = "预算 {amount}",
+            aboveBaseline = "高于基线 {percent}%",
+            highAmountAlert = "高金额提醒",
+            alreadyOverBudget = "已超预算",
+            alreadyOverAnnualBudget = "已超年度预算",
+            overOn = "{label} 超预算",
+            overIn = "{label} 超预算",
+            weekdays = listOf("一", "二", "三", "四", "五", "六", "日")
+        )
+        "zh-TW" -> InsightsText(
+            insightsTitle = "洞察",
+            month = "月",
+            year = "年",
+            selectPeriod = "選擇週期",
+            selectYear = "選擇年份",
+            selectMonth = "選擇月份",
+            close = "關閉",
+            remainingBalance = "結餘",
+            vsLastMonth = "MoM",
+            vsLastYear = "YoY",
+            totalExpense = "總支出",
+            totalIncome = "總收入",
+            metrics = "指標",
+            savingsRate = "儲蓄率",
+            budgetForecast = "預算預測",
+            expenseActivity = "支出活躍度",
+            incomeActivity = "收入活躍度",
+            anomaly = "異常",
+            noIncomeData = "暫無收入資料",
+            noBudgetSet = "未設定預算",
+            noObviousAnomalies = "暫無明顯異常",
+            trend = "趨勢",
+            expense = "支出",
+            income = "收入",
+            balance = "結餘",
+            category = "分類",
+            total = "總計",
+            showMore = "展開更多",
+            showLess = "收起",
+            calendar = "日曆",
+            other = "其他",
+            noData = "暫無資料",
+            netBalance = "淨結餘 {amount}",
+            txCount = "{count} 筆",
+            avgTicket = "單筆均值 {amount}",
+            dailyAvg = "日均 {amount}",
+            monthlyAvg = "月均 {amount}",
+            activeDays = "活躍 {days} 天",
+            budgetNotSet = "未設定預算",
+            forecastLeft = "預計剩餘 {amount}",
+            forecastOver = "預計超出 {amount}",
+            budget = "預算 {amount}",
+            aboveBaseline = "高於基線 {percent}%",
+            highAmountAlert = "高金額提醒",
+            alreadyOverBudget = "已超預算",
+            alreadyOverAnnualBudget = "已超年度預算",
+            overOn = "{label} 超預算",
+            overIn = "{label} 超預算",
+            weekdays = listOf("一", "二", "三", "四", "五", "六", "日")
+        )
+        else -> InsightsText(
+            insightsTitle = "Insights",
+            month = "Month",
+            year = "Year",
+            selectPeriod = "Select Period",
+            selectYear = "Select Year",
+            selectMonth = "Select Month",
+            close = "Close",
+            remainingBalance = "Remaining Balance",
+            vsLastMonth = "MoM",
+            vsLastYear = "YoY",
+            totalExpense = "Total Expense",
+            totalIncome = "Total Income",
+            metrics = "Metrics",
+            savingsRate = "Savings Rate",
+            budgetForecast = "Budget Forecast",
+            expenseActivity = "Expense Activity",
+            incomeActivity = "Income Activity",
+            anomaly = "Anomaly",
+            noIncomeData = "No income data",
+            noBudgetSet = "No budget set",
+            noObviousAnomalies = "No obvious anomalies",
+            trend = "Trend",
+            expense = "Expense",
+            income = "Income",
+            balance = "Balance",
+            category = "Category",
+            total = "Total",
+            showMore = "Show More",
+            showLess = "Show Less",
+            calendar = "Calendar",
+            other = "Other",
+            noData = "No Data",
+            netBalance = "Net balance {amount}",
+            txCount = "{count} tx",
+            avgTicket = "Avg ticket {amount}",
+            dailyAvg = "Daily avg {amount}",
+            monthlyAvg = "Monthly avg {amount}",
+            activeDays = "Active {days}d",
+            budgetNotSet = "Budget not set",
+            forecastLeft = "Forecast left {amount}",
+            forecastOver = "Forecast over {amount}",
+            budget = "Budget {amount}",
+            aboveBaseline = "Above baseline {percent}%",
+            highAmountAlert = "High amount alert",
+            alreadyOverBudget = "Already over budget",
+            alreadyOverAnnualBudget = "Already over annual budget",
+            overOn = "Over on {label}",
+            overIn = "Over in {label}",
+            weekdays = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+        )
+    }
+}

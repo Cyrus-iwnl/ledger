@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/period_picker_overlay"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/insights_black_25"
+    android:clickable="true"
+    android:focusable="true"
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp">
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/period_picker_card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        app:cardBackgroundColor="@color/insights_surface_container_lowest"
+        app:cardCornerRadius="32dp"
+        app:cardElevation="0dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/period_picker_title"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/manrope_family"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/insights_on_surface"
+                    android:textFontWeight="800"
+                    android:textSize="18sp" />
+
+                <com.example.account.ui.insights.MaterialSymbolTextView
+                    android:id="@+id/period_picker_close"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:alpha="0.65"
+                    android:background="@android:color/transparent"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:text="close"
+                    android:textColor="@color/insights_on_surface_variant"
+                    android:textSize="20sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/period_picker_nav"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="8dp"
+                android:visibility="gone">
+
+                <com.example.account.ui.insights.MaterialSymbolTextView
+                    android:id="@+id/period_picker_prev"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:text="chevron_left"
+                    android:textColor="@color/insights_on_surface_variant"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/period_picker_nav_label"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginEnd="12dp"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/inter_family"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/insights_on_surface"
+                    android:textFontWeight="700"
+                    android:textSize="14sp" />
+
+                <com.example.account.ui.insights.MaterialSymbolTextView
+                    android:id="@+id/period_picker_next"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:text="chevron_right"
+                    android:textColor="@color/insights_on_surface_variant"
+                    android:textSize="16sp" />
+            </LinearLayout>
+
+            <GridLayout
+                android:id="@+id/period_picker_options"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="3"
+                android:orientation="horizontal" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</FrameLayout>

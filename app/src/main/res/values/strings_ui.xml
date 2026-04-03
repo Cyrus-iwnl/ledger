@@ -25,6 +25,7 @@
     <string name="dialog_actions_recorded_placeholder">RECORDED AT --</string>
     <string name="dialog_datetime_add_time">Add Time</string>
     <string name="dialog_datetime_hide_time">Hide Time</string>
+    <string name="dialog_datetime_now">Now</string>
     <string name="dialog_datetime_hour">Hour</string>
     <string name="dialog_datetime_minute">Minute</string>
     <string name="dialog_apply">Apply</string>
@@ -51,7 +52,7 @@
     <string name="category_snacks">Snacks</string>
     <string name="category_drinks">Drinks</string>
     <string name="category_clothing">Clothing</string>
-    <string name="category_transport">Transport</string>
+    <string name="category_transport">Transit</string>
     <string name="category_travel">Travel</string>
     <string name="category_fun">Fun</string>
     <string name="category_utility">Utility</string>
@@ -69,6 +70,6 @@
     <string name="category_kids">Kids</string>
     <string name="category_salary">Salary</string>
     <string name="category_bonus">Bonus</string>
-    <string name="category_investment">Investment</string>
+    <string name="category_investment">Invest</string>
     <string name="category_refund">Refund</string>
 </resources>

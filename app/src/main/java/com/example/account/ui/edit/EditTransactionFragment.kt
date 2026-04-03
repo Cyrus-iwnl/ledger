@@ -8,8 +8,11 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewConfiguration
-import android.widget.DatePicker
+import android.widget.FrameLayout
+import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.NumberPicker
+import android.widget.Space
 import android.widget.TextView
 import android.widget.Toast
 import android.app.Dialog
@@ -18,13 +21,14 @@ import androidx.appcompat.widget.PopupMenu
 import androidx.core.view.WindowCompat
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
+import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.example.account.MainActivity
 import com.example.account.R
 import com.example.account.data.CurrencyCode
+import com.example.account.data.CategoryLocalizer
+import com.example.account.data.LedgerCategory
 import com.example.account.data.LedgerViewModel
 import com.example.account.data.TransactionDraft
 import com.example.account.data.TransactionType
@@ -33,8 +37,10 @@ import com.example.account.ui.DialogFactory
 import com.google.android.material.button.MaterialButton
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.math.BigDecimal
 import java.util.Locale
 
 class EditTransactionFragment : Fragment() {
@@ -42,13 +48,18 @@ class EditTransactionFragment : Fragment() {
     private var _binding: FragmentTransactionBinding? = null
     private val binding get() = _binding!!
     private lateinit var viewModel: LedgerViewModel
-    private lateinit var categoryAdapter: CategoryAdapter
     private var transactionId: Long? = null
     private var selectedType: TransactionType = TransactionType.EXPENSE
+    private var selectedCategoryId: String? = null
     private var selectedDateMillis: Long = System.currentTimeMillis()
     private var selectedCurrency: CurrencyCode = CurrencyCode.CNY
     private var amountText: String = "0"
+    private var pendingAmountText: String? = null
+    private var pendingOperator: AmountOperator? = null
+    private var shouldStartNewOperand: Boolean = false
     private var isTypeAnimating: Boolean = false
+    private var currentCategories: List<LedgerCategory> = emptyList()
+    private val categoryCells = mutableMapOf<String, CategoryCell>()
     private var swipeStartX: Float = 0f
     private var swipeStartY: Float = 0f
     private val repeatBackspace = object : Runnable {
@@ -84,19 +95,6 @@ class EditTransactionFragment : Fragment() {
         )
         selectedDateMillis = arguments?.getLong(ARG_DATE_MILLIS)?.takeIf { it > 0 } ?: System.currentTimeMillis()
 
-        categoryAdapter = CategoryAdapter { category ->
-            categoryAdapter.setSelectedCategory(category.id)
-        }
-        binding.categoryList.layoutManager = GridLayoutManager(requireContext(), 5)
-        binding.categoryList.adapter = categoryAdapter
-        binding.categoryList.itemAnimator = null
-        binding.categoryList.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-            val totalHeight = binding.categoryList.height - binding.categoryList.paddingTop - binding.categoryList.paddingBottom
-            if (totalHeight > 0) {
-                categoryAdapter.setItemHeight(totalHeight / 4)
-            }
-        }
-
         applySystemBarColors(
             statusBarColor = ContextCompat.getColor(requireContext(), R.color.app_background),
             navigationBarColor = ContextCompat.getColor(requireContext(), R.color.app_background)
@@ -119,7 +117,7 @@ class EditTransactionFragment : Fragment() {
         binding.expenseButton.setOnClickListener { setType(TransactionType.EXPENSE) }
         binding.incomeButton.setOnClickListener { setType(TransactionType.INCOME) }
 
-        binding.dateButton.setOnClickListener {
+        binding.timeCard.setOnClickListener {
             openDateTimePicker()
         }
         binding.currencyButton.setOnClickListener {
@@ -127,7 +125,7 @@ class EditTransactionFragment : Fragment() {
         }
 
         setupSwipeToSwitchType()
-        setupCategoryListSwipeToSwitchType()
+        binding.categoryList.setOnTouchListener(createCategoryTouchListener(handleClick = false))
         setKeyHandlers()
         setupKeypadFeedback()
         binding.typeToggle.post { syncTypeToggleThumb(animated = false) }
@@ -155,6 +153,7 @@ class EditTransactionFragment : Fragment() {
         selectedDateMillis = draft.dateMillis
         selectedCurrency = draft.currency
         amountText = normalizeAmount(draft.amountText)
+        clearPendingCalculation()
         binding.noteInput.setText(draft.note)
         updateTypeToggleUi()
         updateDateButtonText()
@@ -166,13 +165,176 @@ class EditTransactionFragment : Fragment() {
     }
 
     private fun loadCategories(selectedCategoryId: String? = null) {
-        val categories = viewModel.categoriesFor(selectedType)
-        categoryAdapter.submitList(categories)
-        val targetId = selectedCategoryId
-            ?: categoryAdapter.getSelectedCategory()?.id
-            ?: categories.firstOrNull()?.id
-        if (targetId != null) {
-            categoryAdapter.setSelectedCategory(targetId)
+        currentCategories = viewModel.categoriesFor(selectedType)
+        val validIds = currentCategories.mapTo(mutableSetOf()) { it.id }
+        this.selectedCategoryId = when {
+            selectedCategoryId != null && selectedCategoryId in validIds -> selectedCategoryId
+            this.selectedCategoryId != null && this.selectedCategoryId in validIds -> this.selectedCategoryId
+            else -> currentCategories.firstOrNull()?.id
+        }
+        renderCategoryGrid()
+    }
+
+    private fun renderCategoryGrid() {
+        categoryCells.clear()
+        binding.categoryList.removeAllViews()
+        binding.categoryList.weightSum = CATEGORY_ROW_COUNT.toFloat()
+        repeat(CATEGORY_ROW_COUNT) { rowIndex ->
+            val rowLayout = LinearLayout(requireContext()).apply {
+                isBaselineAligned = false
+                gravity = android.view.Gravity.CENTER
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    0,
+                    1f
+                )
+                weightSum = CATEGORY_COLUMN_COUNT.toFloat()
+                setOnTouchListener(createCategoryTouchListener(handleClick = false))
+            }
+
+            repeat(CATEGORY_COLUMN_COUNT) { columnIndex ->
+                val index = rowIndex * CATEGORY_COLUMN_COUNT + columnIndex
+                val category = currentCategories.getOrNull(index)
+                if (category == null) {
+                    rowLayout.addView(
+                        Space(requireContext()).apply {
+                            layoutParams = createCategoryCellLayoutParams()
+                            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                        }
+                    )
+                    return@repeat
+                }
+
+                val itemView = layoutInflater.inflate(R.layout.item_category, rowLayout, false)
+                itemView.layoutParams = createCategoryCellLayoutParams()
+                val cell = CategoryCell(
+                    root = itemView,
+                    iconContainer = itemView.findViewById(R.id.category_icon_container),
+                    iconImage = itemView.findViewById(R.id.category_icon_image),
+                    iconSymbol = itemView.findViewById(R.id.category_icon_symbol),
+                    name = itemView.findViewById(R.id.category_name)
+                )
+                bindCategoryCell(cell, category, category.id == selectedCategoryId)
+                itemView.setOnClickListener { selectCategory(category.id) }
+                itemView.setOnTouchListener(createCategoryTouchListener(handleClick = true))
+                rowLayout.addView(itemView)
+                categoryCells[category.id] = cell
+            }
+
+            binding.categoryList.addView(rowLayout)
+        }
+    }
+
+    private fun createCategoryCellLayoutParams(): LinearLayout.LayoutParams {
+        return LinearLayout.LayoutParams(
+            0,
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            1f
+        )
+    }
+
+    private fun bindCategoryCell(cell: CategoryCell, category: LedgerCategory, selected: Boolean) {
+        val context = cell.root.context
+        val localizedName = CategoryLocalizer.displayName(context, category)
+        val iconColor = if (selected) {
+            category.accentColor
+        } else {
+            ContextCompat.getColor(context, R.color.editor_on_surface_variant)
+        }
+
+        cell.name.text = localizedName
+        cell.name.setTextColor(
+            if (selected) category.accentColor else ContextCompat.getColor(context, R.color.editor_on_surface_variant)
+        )
+        cell.iconContainer.background = if (selected) {
+            android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.OVAL
+                setColor(ColorUtils.setAlphaComponent(category.accentColor, 38))
+            }
+        } else {
+            ContextCompat.getDrawable(context, R.drawable.bg_editor_category_icon_unselected)
+        }
+
+        val symbolTypeface = resolveSymbolTypeface()
+        if (symbolTypeface != null && category.iconGlyph.isNotBlank()) {
+            cell.iconSymbol.visibility = View.VISIBLE
+            cell.iconImage.visibility = View.GONE
+            cell.iconSymbol.typeface = symbolTypeface
+            cell.iconSymbol.fontFeatureSettings = "'liga'"
+            cell.iconSymbol.text = category.iconGlyph
+            cell.iconSymbol.contentDescription = localizedName
+            cell.iconSymbol.setTextColor(iconColor)
+        } else {
+            cell.iconSymbol.visibility = View.GONE
+            cell.iconImage.visibility = View.VISIBLE
+            cell.iconImage.setImageResource(category.iconRes)
+            cell.iconImage.contentDescription = localizedName
+            cell.iconImage.setColorFilter(iconColor)
+        }
+    }
+
+    private fun selectCategory(categoryId: String) {
+        if (selectedCategoryId == categoryId) {
+            return
+        }
+        val previousId = selectedCategoryId
+        selectedCategoryId = categoryId
+        previousId?.let { previous ->
+            val previousCategory = currentCategories.firstOrNull { it.id == previous } ?: return@let
+            val previousCell = categoryCells[previous] ?: return@let
+            bindCategoryCell(previousCell, previousCategory, selected = false)
+        }
+        val nextCategory = currentCategories.firstOrNull { it.id == categoryId } ?: return
+        val nextCell = categoryCells[categoryId] ?: return
+        bindCategoryCell(nextCell, nextCategory, selected = true)
+    }
+
+    private fun createCategoryTouchListener(handleClick: Boolean): View.OnTouchListener {
+        val touchSlop = ViewConfiguration.get(requireContext()).scaledTouchSlop
+        var downX = 0f
+        var downY = 0f
+        return View.OnTouchListener { view, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    downX = event.rawX
+                    downY = event.rawY
+                    true
+                }
+
+                MotionEvent.ACTION_UP -> {
+                    val deltaX = event.rawX - downX
+                    val deltaY = event.rawY - downY
+                    if (!isTypeAnimating &&
+                        kotlin.math.abs(deltaX) >= touchSlop * 2 &&
+                        kotlin.math.abs(deltaX) > kotlin.math.abs(deltaY)
+                    ) {
+                        if (deltaX < 0 && selectedType != TransactionType.INCOME) {
+                            binding.typeToggle.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                            setType(TransactionType.INCOME)
+                            true
+                        } else if (deltaX > 0 && selectedType != TransactionType.EXPENSE) {
+                            binding.typeToggle.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                            setType(TransactionType.EXPENSE)
+                            true
+                        } else {
+                            false
+                        }
+                    } else if (handleClick &&
+                        kotlin.math.abs(deltaX) < touchSlop &&
+                        kotlin.math.abs(deltaY) < touchSlop
+                    ) {
+                        view.performClick()
+                        true
+                    } else {
+                        false
+                    }
+                }
+
+                MotionEvent.ACTION_CANCEL -> false
+
+                else -> true
+            }
         }
     }
 
@@ -195,8 +357,8 @@ class EditTransactionFragment : Fragment() {
         binding.keyDot.setOnClickListener { appendDot() }
         binding.keyBackspace.setOnClickListener { backspace() }
         binding.keyClear.setOnClickListener { saveTransaction(closeAfterSave = false) }
-        binding.keyPlus.setOnClickListener { setType(TransactionType.INCOME) }
-        binding.keyMinus.setOnClickListener { setType(TransactionType.EXPENSE) }
+        binding.keyPlus.setOnClickListener { applyAmountOperator(AmountOperator.ADD) }
+        binding.keyMinus.setOnClickListener { applyAmountOperator(AmountOperator.SUBTRACT) }
     }
 
     private fun setupSwipeToSwitchType() {
@@ -209,44 +371,6 @@ class EditTransactionFragment : Fragment() {
         )
         attachSwipeSwitchListener(binding.headerBar, touchSlop, allowTapToggle = false)
         attachSwipeSwitchListener(binding.inputPanel, touchSlop, allowTapToggle = false)
-    }
-
-    private fun setupCategoryListSwipeToSwitchType() {
-        val touchSlop = ViewConfiguration.get(requireContext()).scaledTouchSlop
-        binding.categoryList.addOnItemTouchListener(object : RecyclerView.SimpleOnItemTouchListener() {
-            private var downX = 0f
-            private var downY = 0f
-
-            override fun onInterceptTouchEvent(rv: RecyclerView, event: MotionEvent): Boolean {
-                when (event.actionMasked) {
-                    MotionEvent.ACTION_DOWN -> {
-                        downX = event.rawX
-                        downY = event.rawY
-                    }
-
-                    MotionEvent.ACTION_UP -> {
-                        val deltaX = event.rawX - downX
-                        val deltaY = event.rawY - downY
-                        if (!isTypeAnimating &&
-                            kotlin.math.abs(deltaX) >= touchSlop * 2 &&
-                            kotlin.math.abs(deltaX) > kotlin.math.abs(deltaY)
-                        ) {
-                            if (deltaX < 0 && selectedType != TransactionType.INCOME) {
-                                binding.typeToggle.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                                setType(TransactionType.INCOME)
-                                return true
-                            }
-                            if (deltaX > 0 && selectedType != TransactionType.EXPENSE) {
-                                binding.typeToggle.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                                setType(TransactionType.EXPENSE)
-                                return true
-                            }
-                        }
-                    }
-                }
-                return false
-            }
-        })
     }
 
     private fun attachSwipeSwitchListener(
@@ -446,6 +570,12 @@ class EditTransactionFragment : Fragment() {
     }
 
     private fun appendDigit(digit: String) {
+        if (shouldStartNewOperand) {
+            amountText = if (digit == "0") "0" else digit
+            shouldStartNewOperand = false
+            updateAmountPreview()
+            return
+        }
         val nextAmount = when {
             amountText == "0" -> digit
             amountText.contains(".") && amountText.substringAfter(".").length >= MAX_DECIMAL_DIGITS -> amountText
@@ -459,6 +589,12 @@ class EditTransactionFragment : Fragment() {
     }
 
     private fun appendDot() {
+        if (shouldStartNewOperand) {
+            amountText = "0."
+            shouldStartNewOperand = false
+            updateAmountPreview()
+            return
+        }
         if (!amountText.contains(".")) {
             amountText = if (amountText.isBlank()) "0." else "$amountText."
             updateAmountPreview()
@@ -466,6 +602,18 @@ class EditTransactionFragment : Fragment() {
     }
 
     private fun backspace() {
+        if (shouldStartNewOperand && pendingAmountText != null && pendingOperator != null) {
+            amountText = pendingAmountText ?: "0"
+            clearPendingCalculation()
+            updateAmountPreview()
+            return
+        }
+        if (!shouldStartNewOperand && pendingAmountText != null && pendingOperator != null && amountText == "0") {
+            amountText = pendingAmountText ?: "0"
+            clearPendingCalculation()
+            updateAmountPreview()
+            return
+        }
         amountText = when {
             amountText.length <= 1 -> "0"
             else -> amountText.dropLast(1).ifBlank { "0" }.trimEnd('.')
@@ -481,6 +629,7 @@ class EditTransactionFragment : Fragment() {
 
     private fun clearAmount() {
         amountText = "0"
+        clearPendingCalculation()
         updateAmountPreview()
     }
 
@@ -493,8 +642,13 @@ class EditTransactionFragment : Fragment() {
     }
 
     private fun normalizeAmount(text: String): String {
-        val parsed = text.toDoubleOrNull() ?: 0.0
-        return if (parsed % 1.0 == 0.0) parsed.toLong().toString() else parsed.toString()
+        val parsed = parseEditorAmount(text) ?: BigDecimal.ZERO
+        val normalized = parsed.stripTrailingZeros()
+        return if (normalized.scale() < 0) {
+            normalized.setScale(0).toPlainString()
+        } else {
+            normalized.toPlainString()
+        }
     }
 
     private fun updateAmountPreview() {
@@ -508,9 +662,13 @@ class EditTransactionFragment : Fragment() {
     }
 
     private fun formatAmountForEditor(): String {
+        val current = if (amountText.isBlank()) "0" else amountText
+        val left = pendingAmountText
+        val operator = pendingOperator
         return when {
-            amountText.isBlank() -> "0"
-            else -> amountText
+            left == null || operator == null -> current
+            shouldStartNewOperand -> "$left${operator.symbol}"
+            else -> "$left${operator.symbol}$current"
         }
     }
 
@@ -552,9 +710,10 @@ class EditTransactionFragment : Fragment() {
 
     private fun openDateTimePicker() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_transaction_datetime, null, false)
-        val datePicker = dialogView.findViewById<DatePicker>(R.id.datetime_date_picker)
-        val timeToggleButton = dialogView.findViewById<View>(R.id.datetime_time_toggle)
-        val timeContainer = dialogView.findViewById<View>(R.id.datetime_time_container)
+        val yearPicker = dialogView.findViewById<NumberPicker>(R.id.datetime_year_picker)
+        val monthPicker = dialogView.findViewById<NumberPicker>(R.id.datetime_month_picker)
+        val dayPicker = dialogView.findViewById<NumberPicker>(R.id.datetime_day_picker)
+        val nowButton = dialogView.findViewById<View>(R.id.datetime_now_button)
         val hourPicker = dialogView.findViewById<NumberPicker>(R.id.datetime_hour_picker)
         val minutePicker = dialogView.findViewById<NumberPicker>(R.id.datetime_minute_picker)
         val previewText = dialogView.findViewById<TextView>(R.id.datetime_preview_text)
@@ -562,28 +721,45 @@ class EditTransactionFragment : Fragment() {
         val saveButton = dialogView.findViewById<View>(R.id.save_button)
         val zoneId = ZoneId.systemDefault()
         val dateTime = Instant.ofEpochMilli(selectedDateMillis).atZone(zoneId)
-        var showTimeEditor = false
 
-        datePicker.init(dateTime.year, dateTime.monthValue - 1, dateTime.dayOfMonth, null)
-        setupTimePicker(hourPicker, 0, 23, dateTime.hour)
-        setupTimePicker(minutePicker, 0, 59, dateTime.minute)
-
-        fun updateTimeUi() {
-            timeContainer.visibility = if (showTimeEditor) View.VISIBLE else View.GONE
-            if (timeToggleButton is MaterialButton) {
-                timeToggleButton.text = if (showTimeEditor) {
-                    getString(R.string.dialog_datetime_hide_time)
-                } else {
-                    getString(R.string.dialog_datetime_add_time)
-                }
+        listOf(nowButton, cancelButton, saveButton).forEach { button ->
+            (button as? MaterialButton)?.apply {
+                stateListAnimator = null
+                elevation = 0f
+                translationZ = 0f
             }
+        }
+
+        val currentYear = LocalDate.now(zoneId).year
+        val minYear = minOf(dateTime.year, currentYear) - 20
+        val maxYear = maxOf(dateTime.year, currentYear) + 20
+
+        setupNumberPicker(yearPicker, minYear, maxYear, dateTime.year, padWithZero = false)
+        setupNumberPicker(monthPicker, 1, 12, dateTime.monthValue, padWithZero = true)
+        setupNumberPicker(
+            dayPicker,
+            1,
+            YearMonth.of(dateTime.year, dateTime.monthValue).lengthOfMonth(),
+            dateTime.dayOfMonth,
+            padWithZero = true
+        )
+        setupNumberPicker(hourPicker, 0, 23, dateTime.hour, padWithZero = true)
+        setupNumberPicker(minutePicker, 0, 59, dateTime.minute, padWithZero = true)
+
+        fun syncDayRange(targetDay: Int = dayPicker.value) {
+            val maxDay = YearMonth.of(yearPicker.value, monthPicker.value).lengthOfMonth()
+            dayPicker.wrapSelectorWheel = false
+            dayPicker.minValue = 1
+            dayPicker.maxValue = maxDay
+            dayPicker.value = targetDay.coerceIn(1, maxDay)
+            dayPicker.wrapSelectorWheel = true
         }
 
         fun pickedMillis(): Long {
             val localDate = LocalDate.of(
-                datePicker.year,
-                datePicker.month + 1,
-                datePicker.dayOfMonth
+                yearPicker.value,
+                monthPicker.value,
+                dayPicker.value
             )
             val hour = hourPicker.value
             val minute = minutePicker.value
@@ -597,17 +773,27 @@ class EditTransactionFragment : Fragment() {
             previewText.text = formatDateTime(pickedMillis())
         }
 
-        datePicker.setOnDateChangedListener { _, _, _, _ ->
+        yearPicker.setOnValueChangedListener { _, _, _ ->
+            syncDayRange()
             refreshPreview()
         }
+        monthPicker.setOnValueChangedListener { _, _, _ ->
+            syncDayRange()
+            refreshPreview()
+        }
+        dayPicker.setOnValueChangedListener { _, _, _ -> refreshPreview() }
         hourPicker.setOnValueChangedListener { _, _, _ -> refreshPreview() }
         minutePicker.setOnValueChangedListener { _, _, _ -> refreshPreview() }
-        timeToggleButton.setOnClickListener {
-            showTimeEditor = !showTimeEditor
-            updateTimeUi()
+        nowButton.setOnClickListener {
+            val now = Instant.now().atZone(zoneId)
+            yearPicker.value = now.year
+            monthPicker.value = now.monthValue
+            syncDayRange(now.dayOfMonth)
+            dayPicker.value = now.dayOfMonth.coerceIn(1, dayPicker.maxValue)
+            hourPicker.value = now.hour
+            minutePicker.value = now.minute
             refreshPreview()
         }
-        updateTimeUi()
         refreshPreview()
 
         val dialog = createStyledDialog(dialogView)
@@ -620,21 +806,59 @@ class EditTransactionFragment : Fragment() {
         dialog.show()
     }
 
-    private fun setupTimePicker(picker: NumberPicker, min: Int, max: Int, value: Int) {
+    private fun setupNumberPicker(
+        picker: NumberPicker,
+        min: Int,
+        max: Int,
+        value: Int,
+        padWithZero: Boolean
+    ) {
         picker.minValue = min
         picker.maxValue = max
         picker.wrapSelectorWheel = true
         picker.value = value.coerceIn(min, max)
-        picker.setFormatter { number -> String.format(Locale.getDefault(), "%02d", number) }
+        picker.setFormatter { number ->
+            if (padWithZero) {
+                String.format(Locale.getDefault(), "%02d", number)
+            } else {
+                number.toString()
+            }
+        }
+        applyCompactPickerDividers(picker)
+    }
+
+    private fun applyCompactPickerDividers(picker: NumberPicker) {
+        val density = resources.displayMetrics.density
+        val compactDividerDistancePx = (30f * density).toInt()
+        val compactDividerHeightPx = (1.5f * density).toInt().coerceAtLeast(1)
+
+        runCatching {
+            NumberPicker::class.java
+                .getDeclaredField("mSelectionDividersDistance")
+                .apply { isAccessible = true }
+                .setInt(picker, compactDividerDistancePx)
+        }
+        runCatching {
+            NumberPicker::class.java
+                .getDeclaredField("mSelectionDividerHeight")
+                .apply { isAccessible = true }
+                .setInt(picker, compactDividerHeightPx)
+        }
+        picker.invalidate()
     }
 
     private fun saveTransaction(closeAfterSave: Boolean) {
-        val amount = amountText.toDoubleOrNull() ?: 0.0
-        if (amount <= 0) {
+        val resolvedAmountText = resolveAmountTextForSave()
+        val amount = parseEditorAmount(resolvedAmountText) ?: BigDecimal.ZERO
+        if (amount <= BigDecimal.ZERO) {
             Toast.makeText(requireContext(), R.string.invalid_amount, Toast.LENGTH_SHORT).show()
             return
         }
-        val categoryId = categoryAdapter.getSelectedCategory()?.id
+        if (!isWithinRecordAmountLimit(amount)) {
+            Toast.makeText(requireContext(), "Amount must be within 8 digits", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val categoryId = selectedCategoryId
             ?: viewModel.categoriesFor(selectedType).firstOrNull()?.id
             ?: return
         val note = binding.noteInput.text?.toString().orEmpty()
@@ -646,12 +870,14 @@ class EditTransactionFragment : Fragment() {
             .toEpochMilli()
 
         val savedCategoryId = categoryId
+        amountText = resolvedAmountText
+        clearPendingCalculation()
         viewModel.saveTransaction(
             TransactionDraft(
                 transactionId = transactionId,
                 type = selectedType,
                 categoryId = savedCategoryId,
-                amountText = amount.toString(),
+                amountText = normalizeAmount(resolvedAmountText),
                 currency = selectedCurrency,
                 note = note,
                 dateMillis = savedDateMillis
@@ -664,6 +890,7 @@ class EditTransactionFragment : Fragment() {
 
         transactionId = null
         amountText = "0"
+        clearPendingCalculation()
         selectedDateMillis = savedDateMillis
         selectedCurrency = CurrencyCode.CNY
         binding.noteInput.setText("")
@@ -700,6 +927,18 @@ class EditTransactionFragment : Fragment() {
         return DialogFactory.createCardDialog(requireContext(), dialogView)
     }
 
+    private fun resolveSymbolTypeface(): Typeface? {
+        if (!symbolTypefaceResolved) {
+            symbolTypeface = try {
+                ResourcesCompat.getFont(requireContext(), R.font.material_symbols_outlined_static)
+            } catch (_: Throwable) {
+                null
+            }
+            symbolTypefaceResolved = true
+        }
+        return symbolTypeface
+    }
+
     override fun onDestroyView() {
         _binding?.keyBackspace?.removeCallbacks(repeatBackspace)
         context?.let { context ->
@@ -720,13 +959,102 @@ class EditTransactionFragment : Fragment() {
         }
     }
 
+    private data class CategoryCell(
+        val root: View,
+        val iconContainer: FrameLayout,
+        val iconImage: ImageView,
+        val iconSymbol: TextView,
+        val name: TextView
+    )
+
+    private enum class AmountOperator(val symbol: String) {
+        ADD("+"),
+        SUBTRACT("-")
+    }
+
+    private fun applyAmountOperator(operator: AmountOperator) {
+        val currentAmount = parseEditorAmount(amountText) ?: return
+        val currentAmountText = normalizeAmount(currentAmount.toPlainString())
+        val leftOperandText = pendingAmountText
+        val existingOperator = pendingOperator
+
+        if (leftOperandText == null || existingOperator == null) {
+            pendingAmountText = currentAmountText
+            pendingOperator = operator
+            shouldStartNewOperand = true
+            updateAmountPreview()
+            return
+        }
+
+        if (shouldStartNewOperand) {
+            pendingOperator = operator
+            updateAmountPreview()
+            return
+        }
+
+        val leftAmount = parseEditorAmount(leftOperandText) ?: currentAmount
+        val result = when (existingOperator) {
+            AmountOperator.ADD -> leftAmount + currentAmount
+            AmountOperator.SUBTRACT -> leftAmount - currentAmount
+        }
+        amountText = normalizeAmount(result.toPlainString())
+        pendingAmountText = amountText
+        pendingOperator = operator
+        shouldStartNewOperand = true
+        updateAmountPreview()
+    }
+
+    private fun resolveAmountTextForSave(): String {
+        val leftOperandText = pendingAmountText
+        val operator = pendingOperator
+        if (leftOperandText == null || operator == null) {
+            return normalizeAmount(amountText)
+        }
+        if (shouldStartNewOperand) {
+            return normalizeAmount(leftOperandText)
+        }
+        val left = parseEditorAmount(leftOperandText) ?: BigDecimal.ZERO
+        val right = parseEditorAmount(amountText) ?: BigDecimal.ZERO
+        val result = when (operator) {
+            AmountOperator.ADD -> left + right
+            AmountOperator.SUBTRACT -> left - right
+        }
+        return normalizeAmount(result.toPlainString())
+    }
+
+    private fun parseEditorAmount(text: String): BigDecimal? {
+        val sanitized = text.trim().removeSuffix(".")
+        if (sanitized.isBlank()) {
+            return BigDecimal.ZERO
+        }
+        return sanitized.toBigDecimalOrNull()
+    }
+
+    private fun clearPendingCalculation() {
+        pendingAmountText = null
+        pendingOperator = null
+        shouldStartNewOperand = false
+    }
+
+    private fun isWithinRecordAmountLimit(amount: BigDecimal): Boolean {
+        val integerText = amount.abs().toPlainString().substringBefore('.').trimStart('0')
+        val integerDigits = if (integerText.isEmpty()) 1 else integerText.length
+        return integerDigits <= MAX_RECORDED_INTEGER_DIGITS
+    }
+
     companion object {
         private const val ARG_TRANSACTION_ID = "transaction_id"
         private const val ARG_DATE_MILLIS = "date_millis"
         private const val ARG_DEFAULT_TYPE = "default_type"
-        private const val MAX_INTEGER_DIGITS = 7
+        private const val CATEGORY_COLUMN_COUNT = 5
+        private const val CATEGORY_ROW_COUNT = 4
+        private const val CATEGORY_SLOT_COUNT = CATEGORY_COLUMN_COUNT * CATEGORY_ROW_COUNT
+        private const val MAX_INTEGER_DIGITS = 8
+        private const val MAX_RECORDED_INTEGER_DIGITS = 8
         private const val MAX_DECIMAL_DIGITS = 2
         private const val BACKSPACE_REPEAT_INTERVAL_MS = 60L
+        private var symbolTypefaceResolved = false
+        private var symbolTypeface: Typeface? = null
 
         fun newInstance(
             transactionId: Long?,

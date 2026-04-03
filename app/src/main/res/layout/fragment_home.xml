@@ -58,13 +58,15 @@
                     android:foreground="?attr/selectableItemBackground"
                     android:drawableEnd="@drawable/ic_dashboard_expand_more_20"
                     android:drawablePadding="2dp"
+                    android:fontFamily="@font/inter_family"
                     android:gravity="center"
+                    android:includeFontPadding="false"
                     android:paddingStart="14dp"
                     android:paddingEnd="12dp"
                     android:text="@string/home_month_selector_placeholder"
                     android:textColor="@color/text_primary"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
+                    android:textFontWeight="700"
+                    android:textSize="14sp" />
             </FrameLayout>
 
             <FrameLayout

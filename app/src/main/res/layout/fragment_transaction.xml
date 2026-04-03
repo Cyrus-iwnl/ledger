@@ -141,12 +141,13 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/header_bar">
 
-        <androidx.recyclerview.widget.RecyclerView
+        <LinearLayout
                 android:id="@+id/category_list"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:clipChildren="false"
                 android:clipToPadding="false"
+                android:orientation="vertical"
                 android:overScrollMode="never"
                 android:paddingStart="4dp"
                 android:paddingTop="8dp"
@@ -197,11 +198,14 @@
                     android:insetBottom="0dp"
                     android:paddingStart="8dp"
                     android:paddingEnd="8dp"
+                    android:clickable="false"
+                    android:focusable="false"
                     android:gravity="start|center_vertical"
                     android:text="@string/date_time_placeholder"
                     android:textAllCaps="false"
                     android:textColor="#2D3335"
                     android:textSize="14sp"
+                    android:letterSpacing="0"
                     android:fontFamily="sans-serif-medium"
                     app:rippleColor="#335A6062" />
 
@@ -273,7 +277,7 @@
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
             android:layout_marginBottom="8dp"
-            app:cardBackgroundColor="@color/surface_elevated"
+            app:cardBackgroundColor="@color/editor_key_bg"
             app:cardCornerRadius="24dp"
             app:cardElevation="0dp"
             app:strokeWidth="0dp"
@@ -303,25 +307,29 @@
                     android:id="@+id/currency_symbol"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="￥"
+                    android:text="&#165;"
                     android:textColor="#F87171"
                     android:textSize="18sp"
                     android:textStyle="bold"
                     android:fontFamily="sans-serif-medium"
                     android:layout_marginEnd="4dp" />
 
-            <TextView
+            <androidx.appcompat.widget.AppCompatTextView
                     android:id="@+id/amount_preview"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:fontFamily="sans-serif-medium"
-                    android:maxLength="10"
+                    android:maxLength="24"
                     android:maxLines="1"
                     android:text="0"
                     android:textColor="#F87171"
                     android:textSize="32sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    app:autoSizeTextType="uniform"
+                    app:autoSizeMinTextSize="18sp"
+                    app:autoSizeMaxTextSize="32sp"
+                    app:autoSizeStepGranularity="1sp" />
 
             <!-- invisible currency_button kept for code compatibility -->
             <com.google.android.material.button.MaterialButton
