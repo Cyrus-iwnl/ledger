@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="home_month_selector_placeholder">2026-03</string>
     <string name="home_amount_placeholder">&#165;.00</string>
@@ -12,11 +12,19 @@
     <string name="home_trend_summary_both_format">收入: %1$s | 支出: %2$s</string>
     <string name="home_selected_day_summary_format">%1$s  收入: %2$s | 支出: %3$s</string>
     <string name="home_budget_for_month_format">%1$s 预算</string>
+    <string name="home_budget_for_year_format">%1$d 年预算</string>
+    <string name="home_budget_for_all_format">总预算</string>
+    <string name="home_month_selector_all">全部</string>
+    <string name="home_month_selector_pick_month">选择月份</string>
+    <string name="home_scope_all_spending">全部支出</string>
+    <string name="home_scope_yearly_spending">本年支出</string>
     <string name="home_budget_input_invalid_decimals">最多支持 2 位小数</string>
     <string name="home_budget_input_invalid_positive">请输入正数</string>
     <string name="home_recorded_at_format">记录于 %1$s</string>
 
     <string name="dialog_monthly_budget_title">设置月预算</string>
+    <string name="dialog_yearly_budget_title">设置年预算</string>
+    <string name="dialog_total_budget_title">设置总预算</string>
     <string name="dialog_monthly_budget_hint">月预算</string>
     <string name="dialog_delete_title">删除记录</string>
     <string name="dialog_delete_subtitle">此操作不可撤销。</string>
@@ -25,12 +33,12 @@
     <string name="dialog_actions_recorded_placeholder">记录于 --</string>
     <string name="dialog_datetime_add_time">添加时间</string>
     <string name="dialog_datetime_hide_time">隐藏时间</string>
-    <string name="dialog_datetime_hour">小时</string>
-    <string name="dialog_datetime_minute">分钟</string>
+    <string name="dialog_datetime_now">现在</string>
     <string name="dialog_datetime_year">年</string>
     <string name="dialog_datetime_month">月</string>
     <string name="dialog_datetime_day">日</string>
-    <string name="dialog_datetime_now">现在</string>
+    <string name="dialog_datetime_hour">小时</string>
+    <string name="dialog_datetime_minute">分钟</string>
     <string name="dialog_apply">应用</string>
     <string name="dialog_trend_filter_title">图表筛选</string>
     <string name="dialog_trend_filter_dimension">维度</string>
@@ -51,7 +59,7 @@
     <string name="transaction_key_again">再记</string>
     <string name="trend_no_data">暂无趋势数据</string>
 
-    <string name="category_meals">餐饮</string>
+    <string name="category_meals">三餐</string>
     <string name="category_snacks">零食</string>
     <string name="category_drinks">饮品</string>
     <string name="category_clothing">服饰</string>
@@ -70,9 +78,21 @@
     <string name="category_home">居家</string>
     <string name="category_comm">通讯</string>
     <string name="category_social">社交</string>
-    <string name="category_kids">亲子</string>
+    <string name="category_kids">&#20146;&#23376;</string>
     <string name="category_salary">工资</string>
     <string name="category_bonus">奖金</string>
     <string name="category_investment">投资</string>
     <string name="category_refund">退款</string>
+    <string name="refund">\u9000\u6b3e</string>
+    <string name="refund_amount">\u9000\u6b3e\u91d1\u989d</string>
+    <string name="submit">\u63d0\u4ea4</string>
+    <string name="refund_original_and_refunded_format">\u539f\u59cb\u652f\u51fa: %1$s  \u5df2\u9000\u6b3e: %2$s</string>
+    <string name="refund_amount_too_large_format">\u9000\u6b3e\u91d1\u989d\u4e0d\u80fd\u5927\u4e8e %1$s</string>
+    <string name="transaction_refunded_amount_format">\u5df2\u9000\u6b3e %1$s</string>
 </resources>
+
+
+
+
+
+

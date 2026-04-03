@@ -21,34 +21,31 @@
             android:padding="20dp">
 
             <TextView
-                android:id="@+id/budget_dialog_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/dialog_monthly_budget_title"
+                android:text="@string/settings_ledger_add_title"
                 android:textColor="@color/text_primary"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
             <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/budget_input_layout"
+                android:id="@+id/ledger_input_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:hint="@string/dialog_monthly_budget_hint"
+                android:hint="@string/settings_ledger_name_hint"
                 app:boxBackgroundColor="@color/surface_soft_blue"
                 app:boxBackgroundMode="outline"
                 app:boxCornerRadiusBottomEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
                 app:boxCornerRadiusTopEnd="12dp"
                 app:boxCornerRadiusTopStart="12dp"
-                app:boxStrokeColor="@color/card_stroke"
-                app:startIconDrawable="@drawable/ic_dashboard_bar_chart_24">
+                app:boxStrokeColor="@color/card_stroke">
 
                 <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/budget_input"
+                    android:id="@+id/ledger_input"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="numberDecimal"
                     android:maxLines="1"
                     android:textColor="@color/text_primary"
                     android:textSize="16sp" />

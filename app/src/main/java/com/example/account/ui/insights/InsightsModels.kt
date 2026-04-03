@@ -2,7 +2,8 @@ package com.example.account.ui.insights
 
 enum class InsightsGranularity {
     MONTH,
-    YEAR
+    YEAR,
+    ALL
 }
 
 enum class InsightsMetric {
@@ -18,6 +19,7 @@ enum class InsightsCategoryMode {
 
 data class InsightsTrendBucket(
     val label: String,
+    val detailLabel: String = label,
     val income: Double,
     val expense: Double
 )

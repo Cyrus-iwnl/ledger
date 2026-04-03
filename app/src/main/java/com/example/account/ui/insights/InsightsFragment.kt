@@ -10,6 +10,7 @@ import android.text.style.ForegroundColorSpan
 import android.text.style.RelativeSizeSpan
 import android.util.TypedValue
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -90,10 +91,23 @@ class InsightsFragment : Fragment() {
         localeTag = normalizeInsightsLocaleTag(resources.configuration.locales[0]?.toLanguageTag())
         numberLocale = insightsNumberLocale(localeTag)
         text = insightsText(localeTag)
-        uiState = UiState(year = LocalDate.now().year, monthIndex = LocalDate.now().monthValue - 1)
+        val defaultGranularity = arguments?.getString(ARG_DEFAULT_GRANULARITY).orEmpty()
+        val now = LocalDate.now()
+        val resolvedYear = arguments?.getInt(ARG_DEFAULT_YEAR, now.year) ?: now.year
+        val resolvedMonthIndex = arguments?.getInt(ARG_DEFAULT_MONTH_INDEX, now.monthValue - 1) ?: (now.monthValue - 1)
+        uiState = UiState(
+            year = resolvedYear,
+            monthIndex = resolvedMonthIndex.coerceIn(0, 11),
+            granularity = when (defaultGranularity.uppercase(Locale.ROOT)) {
+                "ALL" -> InsightsGranularity.ALL
+                "YEAR" -> InsightsGranularity.YEAR
+                else -> InsightsGranularity.MONTH
+            }
+        )
 
         applyStaticText()
         applyStaticStyles()
+        applyLedgerModeUi()
         bindListeners()
         bindPeriodPickerResult()
         stabilizeInitialToggleStyles()
@@ -161,8 +175,13 @@ class InsightsFragment : Fragment() {
 
     private fun render() {
         val index = transactionIndex ?: return
-        val currentTransactions = getTransactionsForPeriod(index, 0)
-        val previousTransactions = getTransactionsForPeriod(index, -1)
+        applyLedgerModeUi()
+        val currentTransactions = currentScopeTransactions(index)
+        val previousTransactions = if (uiState.granularity == InsightsGranularity.ALL) {
+            emptyList()
+        } else {
+            getTransactionsForPeriod(index, -1)
+        }
         val currentSummary = summarize(currentTransactions)
         val previousSummary = summarize(previousTransactions)
         val buckets = buildBuckets(currentTransactions)
@@ -181,6 +200,7 @@ class InsightsFragment : Fragment() {
         binding.insightsPageTitle.text = text.insightsTitle
         binding.insightsGranularityMonth.text = text.month.uppercase(numberLocale)
         binding.insightsGranularityYear.text = text.year.uppercase(numberLocale)
+        binding.insightsGranularityAll.text = text.all.uppercase(numberLocale)
         binding.insightsBalanceLabel.text = text.remainingBalance
         binding.insightsBalanceDeltaLabel.text = compareLabel()
         binding.insightsExpenseLabel.text = forceTwoLineLabel(text.totalExpense)
@@ -237,7 +257,7 @@ class InsightsFragment : Fragment() {
             binding.insightsMetricExpenseActivityCard,
             binding.insightsMetricIncomeActivityCard,
             binding.insightsMetricAnomalyCard
-        ).forEach { background(it, white, 16f, ColorUtils.setAlphaComponent(surfaceVariant, 51)) }
+        ).forEach { background(it, white, 16f, ColorUtils.setAlphaComponent(surfaceVariant, 64)) }
 
         listOf(
             binding.insightsTrendMetricGroup,
@@ -250,19 +270,43 @@ class InsightsFragment : Fragment() {
         binding.insightsTrendChart.setNumberLocale(numberLocale)
     }
 
+    private fun applyLedgerModeUi() {
+        val isAll = uiState.granularity == InsightsGranularity.ALL
+        binding.insightsBalanceDeltaBadge.isVisible = !isAll
+        binding.insightsExpenseDeltaBadge.isVisible = !isAll
+        binding.insightsIncomeDeltaBadge.isVisible = !isAll
+        binding.insightsPeriodButton.isEnabled = !isAll
+        binding.insightsPeriodButton.isClickable = !isAll
+        binding.insightsPeriodIcon.isVisible = !isAll
+        binding.insightsPeriodDisplay.setPaddingRelative(
+            binding.insightsPeriodDisplay.paddingStart,
+            binding.insightsPeriodDisplay.paddingTop,
+            if (isAll) 0 else dpInt(24),
+            binding.insightsPeriodDisplay.paddingBottom
+        )
+    }
+
     private fun bindListeners() {
         binding.insightsBackButton.setOnClickListener {
             parentFragmentManager.popBackStack()
         }
         binding.insightsGranularityMonth.setOnClickListener {
             uiState = uiState.copy(granularity = InsightsGranularity.MONTH)
+            applyLedgerModeUi()
             render()
         }
         binding.insightsGranularityYear.setOnClickListener {
             uiState = uiState.copy(granularity = InsightsGranularity.YEAR)
+            applyLedgerModeUi()
+            render()
+        }
+        binding.insightsGranularityAll.setOnClickListener {
+            uiState = uiState.copy(granularity = InsightsGranularity.ALL)
+            applyLedgerModeUi()
             render()
         }
         binding.insightsPeriodButton.setOnClickListener {
+            if (uiState.granularity == InsightsGranularity.ALL) return@setOnClickListener
             openPeriodPicker()
         }
         binding.insightsTrendMetricExpense.setOnClickListener {
@@ -287,27 +331,59 @@ class InsightsFragment : Fragment() {
         }
         binding.insightsCategoryToggle.setOnClickListener {
             uiState = uiState.copy(categoryExpanded = !uiState.categoryExpanded)
-            transactionIndex?.let { renderCategories(getTransactionsForPeriod(it, 0)) }
+            transactionIndex?.let { renderCategories(currentScopeTransactions(it)) }
         }
         binding.insightsCalendarMetricExpense.setOnClickListener {
+            if (uiState.calendarMetric == InsightsMetric.EXPENSE) return@setOnClickListener
             uiState = uiState.copy(calendarMetric = InsightsMetric.EXPENSE)
-            render()
+            renderCalendarSection()
+            updateToggleStyles()
         }
         binding.insightsCalendarMetricIncome.setOnClickListener {
+            if (uiState.calendarMetric == InsightsMetric.INCOME) return@setOnClickListener
             uiState = uiState.copy(calendarMetric = InsightsMetric.INCOME)
-            render()
+            renderCalendarSection()
+            updateToggleStyles()
         }
         binding.insightsCalendarMetricBalance.setOnClickListener {
+            if (uiState.calendarMetric == InsightsMetric.BALANCE) return@setOnClickListener
             uiState = uiState.copy(calendarMetric = InsightsMetric.BALANCE)
-            render()
+            renderCalendarSection()
+            updateToggleStyles()
         }
         binding.insightsTrendChart.setOnSelectionChangedListener { selected ->
             uiState = uiState.copy(selectedBarIndex = selected)
         }
         binding.insightsDonutChart.setOnSelectionChangedListener { selected ->
             uiState = uiState.copy(selectedCategoryId = selected)
-            transactionIndex?.let { renderCategories(getTransactionsForPeriod(it, 0)) }
+            transactionIndex?.let { renderCategories(currentScopeTransactions(it)) }
         }
+        binding.insightsScroll.setOnTouchListener { _, event ->
+            if (
+                event.actionMasked == MotionEvent.ACTION_DOWN &&
+                uiState.selectedCategoryId != null &&
+                !isTouchInsideView(binding.insightsDonutChart, event.rawX, event.rawY)
+            ) {
+                clearCategorySelection()
+            }
+            false
+        }
+    }
+
+    private fun clearCategorySelection() {
+        if (uiState.selectedCategoryId == null) return
+        uiState = uiState.copy(selectedCategoryId = null)
+        transactionIndex?.let { renderCategories(currentScopeTransactions(it)) }
+    }
+
+    private fun isTouchInsideView(target: View, rawX: Float, rawY: Float): Boolean {
+        val location = IntArray(2)
+        target.getLocationOnScreen(location)
+        val left = location[0].toFloat()
+        val top = location[1].toFloat()
+        val right = left + target.width
+        val bottom = top + target.height
+        return rawX in left..right && rawY in top..bottom
     }
 
     private fun bindPeriodPickerResult() {
@@ -332,42 +408,43 @@ class InsightsFragment : Fragment() {
         }
     }
     private fun renderSummary(current: Summary, previous: Summary) {
-        val expenseDelta = calculateDelta(current.expense, previous.expense)
-        val incomeDelta = calculateDelta(current.income, previous.income)
-        val balanceDelta = calculateDelta(current.balance, previous.balance)
-
         binding.insightsPeriodDisplay.text = currentPeriodLabel()
-        binding.insightsBalanceDeltaLabel.text = compareLabel()
-        updateDeltaBadge(
-            icon = binding.insightsBalanceDeltaIcon,
-            percent = binding.insightsBalanceDeltaPercent,
-            delta = balanceDelta,
-            positiveColor = color(R.color.insights_green_600),
-            negativeColor = color(R.color.insights_error_container),
-            widthPx = dpInt(34)
-        )
         binding.insightsRemainingBalance.text = richMoney(current.balance)
         binding.insightsExpenseAmount.text = money(current.expense)
         binding.insightsIncomeAmount.text = money(current.income)
 
-        updateDeltaBadge(
-            icon = binding.insightsExpenseDeltaIcon,
-            percent = binding.insightsExpenseDeltaPercent,
-            delta = expenseDelta,
-            positiveColor = color(R.color.insights_error_container),
-            negativeColor = color(R.color.insights_green_600),
-            widthPx = dpInt(20),
-            fixedTwoDigitPercentWidth = true
-        )
-        updateDeltaBadge(
-            icon = binding.insightsIncomeDeltaIcon,
-            percent = binding.insightsIncomeDeltaPercent,
-            delta = incomeDelta,
-            positiveColor = color(R.color.insights_green_600),
-            negativeColor = color(R.color.insights_error_container),
-            widthPx = dpInt(20),
-            fixedTwoDigitPercentWidth = true
-        )
+        if (uiState.granularity != InsightsGranularity.ALL) {
+            val expenseDelta = calculateDelta(current.expense, previous.expense)
+            val incomeDelta = calculateDelta(current.income, previous.income)
+            val balanceDelta = calculateDelta(current.balance, previous.balance)
+            binding.insightsBalanceDeltaLabel.text = compareLabel()
+            updateDeltaBadge(
+                icon = binding.insightsBalanceDeltaIcon,
+                percent = binding.insightsBalanceDeltaPercent,
+                delta = balanceDelta,
+                positiveColor = color(R.color.insights_green_600),
+                negativeColor = color(R.color.insights_error_container),
+                widthPx = dpInt(34)
+            )
+            updateDeltaBadge(
+                icon = binding.insightsExpenseDeltaIcon,
+                percent = binding.insightsExpenseDeltaPercent,
+                delta = expenseDelta,
+                positiveColor = color(R.color.insights_error_container),
+                negativeColor = color(R.color.insights_green_600),
+                widthPx = dpInt(20),
+                fixedTwoDigitPercentWidth = true
+            )
+            updateDeltaBadge(
+                icon = binding.insightsIncomeDeltaIcon,
+                percent = binding.insightsIncomeDeltaPercent,
+                delta = incomeDelta,
+                positiveColor = color(R.color.insights_green_600),
+                negativeColor = color(R.color.insights_error_container),
+                widthPx = dpInt(20),
+                fixedTwoDigitPercentWidth = true
+            )
+        }
     }
 
     private fun calculateDelta(currentValue: Double, previousValue: Double): Double {
@@ -453,10 +530,10 @@ class InsightsFragment : Fragment() {
         binding.insightsMetricExpenseActivityValue.text = text.format(text.txCount, mapOf("count" to expenseTransactions.size))
         binding.insightsMetricExpenseActivitySub.text = listOf(
             text.format(text.avgTicket, mapOf("amount" to compactMoney(currentSummary.expense / max(1, expenseTransactions.size)))),
-            if (uiState.granularity == InsightsGranularity.MONTH) {
-                text.format(text.dailyAvg, mapOf("amount" to compactMoney(currentSummary.expense / max(1, progress.elapsedUnits))))
-            } else {
+            if (uiState.granularity == InsightsGranularity.YEAR) {
                 text.format(text.monthlyAvg, mapOf("amount" to compactMoney(currentSummary.expense / max(1, progress.elapsedUnits))))
+            } else {
+                text.format(text.dailyAvg, mapOf("amount" to compactMoney(currentSummary.expense / max(1, progress.elapsedUnits))))
             },
             text.format(text.activeDays, mapOf("days" to expenseDays))
         ).joinToString("\n")
@@ -464,10 +541,10 @@ class InsightsFragment : Fragment() {
         binding.insightsMetricIncomeActivityValue.text = text.format(text.txCount, mapOf("count" to incomeTransactions.size))
         binding.insightsMetricIncomeActivitySub.text = listOf(
             text.format(text.avgTicket, mapOf("amount" to compactMoney(currentSummary.income / max(1, incomeTransactions.size)))),
-            if (uiState.granularity == InsightsGranularity.MONTH) {
-                text.format(text.dailyAvg, mapOf("amount" to compactMoney(currentSummary.income / max(1, progress.elapsedUnits))))
-            } else {
+            if (uiState.granularity == InsightsGranularity.YEAR) {
                 text.format(text.monthlyAvg, mapOf("amount" to compactMoney(currentSummary.income / max(1, progress.elapsedUnits))))
+            } else {
+                text.format(text.dailyAvg, mapOf("amount" to compactMoney(currentSummary.income / max(1, progress.elapsedUnits))))
             },
             text.format(text.activeDays, mapOf("days" to incomeDays))
         ).joinToString("\n")
@@ -608,9 +685,20 @@ class InsightsFragment : Fragment() {
             )
         }.sortedByDescending { it.amount }
     }
+
+    private fun renderCalendarSection() {
+        val index = transactionIndex ?: return
+        renderCalendar(currentScopeTransactions(index))
+    }
+
     private fun renderCalendar(currentTransactions: List<IndexedTransaction>) {
         binding.insightsCalendarWeekdays.removeAllViews()
         binding.insightsCalendarGrid.removeAllViews()
+        applyCalendarGridOuterDivider(false)
+        if (uiState.granularity == InsightsGranularity.ALL) {
+            renderAllCalendar(currentTransactions)
+            return
+        }
         if (uiState.granularity == InsightsGranularity.MONTH) {
             binding.insightsCalendarGrid.columnCount = 7
             binding.insightsCalendarWeekdays.isVisible = true
@@ -635,6 +723,196 @@ class InsightsFragment : Fragment() {
         binding.insightsCalendarWeekdays.isVisible = false
         binding.insightsCalendarGrid.columnCount = 3
         renderYearCalendar(currentTransactions)
+    }
+
+    private fun renderAllCalendar(currentTransactions: List<IndexedTransaction>) {
+        if (currentTransactions.isEmpty()) {
+            binding.insightsCalendarWeekdays.isVisible = false
+            binding.insightsCalendarGrid.columnCount = 7
+            return
+        }
+        val dates = currentTransactions.map {
+            Instant.ofEpochMilli(it.source.timestampMillis).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+        }
+        val firstDate = dates.minOrNull() ?: return
+        val lastRecordedDate = dates.maxOrNull() ?: firstDate
+        val totalYears = java.time.temporal.ChronoUnit.YEARS.between(firstDate, lastRecordedDate).toInt() + 1
+        if (totalYears > 3) {
+            binding.insightsCalendarWeekdays.isVisible = false
+            binding.insightsCalendarGrid.columnCount = 3
+            renderProjectYearCalendar(currentTransactions, firstDate, lastRecordedDate)
+            return
+        }
+        val showMonthly = firstDate.plusMonths(3).isBefore(lastRecordedDate)
+
+        if (showMonthly) {
+            binding.insightsCalendarWeekdays.isVisible = false
+            binding.insightsCalendarGrid.columnCount = 3
+            renderProjectMonthlyCalendar(currentTransactions, firstDate, lastRecordedDate)
+            return
+        }
+
+        binding.insightsCalendarGrid.columnCount = 7
+        binding.insightsCalendarWeekdays.isVisible = true
+        text.weekdays.forEach { label ->
+            binding.insightsCalendarWeekdays.addView(
+                TextView(requireContext()).apply {
+                    layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                    gravity = android.view.Gravity.CENTER
+                    textAlignment = View.TEXT_ALIGNMENT_CENTER
+                    typeface = Typeface.create(ResourcesCompat.getFont(requireContext(), R.font.inter_family), 700, false)
+                    includeFontPadding = false
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+                    setTextColor(color(R.color.insights_on_surface_variant))
+                    text = label
+                    setPadding(0, dpInt(4), 0, dpInt(4))
+                }
+            )
+        }
+
+        val endDate = if (java.time.temporal.ChronoUnit.DAYS.between(firstDate, lastRecordedDate).toInt() + 1 < 30) {
+            firstDate.plusDays(30)
+        } else {
+            lastRecordedDate
+        }
+        renderProjectDailyCalendar(currentTransactions, firstDate, endDate)
+    }
+
+    private fun renderProjectDailyCalendar(
+        currentTransactions: List<IndexedTransaction>,
+        startDate: LocalDate,
+        endDate: LocalDate
+    ) {
+        val grouped = currentTransactions.groupBy {
+            Instant.ofEpochMilli(it.source.timestampMillis).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+        }
+        val dayCount = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate).toInt() + 1
+        val statsByDate = (0 until dayCount).associate { offset ->
+            val date = startDate.plusDays(offset.toLong())
+            val bucket = grouped[date].orEmpty()
+            date to ProjectCalendarStat(
+                date = date,
+                income = bucket.sumOf { if (it.source.type == TransactionType.INCOME) it.source.amount else 0.0 },
+                expense = bucket.sumOf { if (it.source.type == TransactionType.EXPENSE) it.source.amount else 0.0 }
+            )
+        }
+        val stats = statsByDate.values.toList()
+        val values = stats.map { calendarMetricValue(it.income, it.expense) }
+        val scale = ToneScale(
+            maxValue = values.maxOfOrNull { abs(it) } ?: 0.0,
+            positiveMax = values.filter { it > 0 }.maxOrNull() ?: 0.0,
+            negativeMax = values.filter { it < 0 }.maxOfOrNull { abs(it) } ?: 0.0
+        )
+        var cursorMonth = YearMonth.from(startDate)
+        val endMonth = YearMonth.from(endDate)
+        while (!cursorMonth.isAfter(endMonth)) {
+            binding.insightsCalendarGrid.addView(calendarMonthDivider(cursorMonth))
+
+            val monthStart = maxOf(startDate, cursorMonth.atDay(1))
+            val monthEnd = minOf(endDate, cursorMonth.atEndOfMonth())
+            val monthDays = java.time.temporal.ChronoUnit.DAYS.between(monthStart, monthEnd).toInt() + 1
+            val firstWeekday = (monthStart.dayOfWeek.value - 1).coerceAtLeast(0)
+
+            repeat(firstWeekday) {
+                binding.insightsCalendarGrid.addView(calendarEmptyCell())
+            }
+            repeat(monthDays) { dayOffset ->
+                val date = monthStart.plusDays(dayOffset.toLong())
+                val stat = statsByDate[date] ?: ProjectCalendarStat(date, 0.0, 0.0)
+                binding.insightsCalendarGrid.addView(
+                    calendarDayCell(
+                        dayLabel = stat.date.dayOfMonth.toString(),
+                        value = calendarMetricValue(stat.income, stat.expense),
+                        scale = scale
+                    )
+                )
+            }
+
+            val totalCells = firstWeekday + monthDays
+            val padded = ceil(totalCells / 7.0).toInt() * 7
+            repeat(padded - totalCells) {
+                binding.insightsCalendarGrid.addView(calendarEmptyCell())
+            }
+
+            cursorMonth = cursorMonth.plusMonths(1)
+        }
+    }
+
+    private fun renderProjectMonthlyCalendar(
+        currentTransactions: List<IndexedTransaction>,
+        firstDate: LocalDate,
+        lastDate: LocalDate
+    ) {
+        val startMonth = YearMonth.from(firstDate)
+        val endMonth = YearMonth.from(lastDate)
+        val monthCount = java.time.temporal.ChronoUnit.MONTHS.between(startMonth, endMonth).toInt() + 1
+        val grouped = currentTransactions.groupBy {
+            YearMonth.from(Instant.ofEpochMilli(it.source.timestampMillis).atZone(java.time.ZoneId.systemDefault()))
+        }
+        val stats = (0 until monthCount).map { offset ->
+            val month = startMonth.plusMonths(offset.toLong())
+            val bucket = grouped[month].orEmpty()
+            ProjectMonthCalendarStat(
+                month = month,
+                income = bucket.sumOf { if (it.source.type == TransactionType.INCOME) it.source.amount else 0.0 },
+                expense = bucket.sumOf { if (it.source.type == TransactionType.EXPENSE) it.source.amount else 0.0 }
+            )
+        }
+        val values = stats.map { calendarMetricValue(it.income, it.expense) }
+        val scale = ToneScale(
+            maxValue = values.maxOfOrNull { abs(it) } ?: 0.0,
+            positiveMax = values.filter { it > 0 }.maxOrNull() ?: 0.0,
+            negativeMax = values.filter { it < 0 }.maxOfOrNull { abs(it) } ?: 0.0
+        )
+        stats.forEach { stat ->
+            val label = if (localeTag == "en") {
+                stat.month.format(DateTimeFormatter.ofPattern("MMM yy", numberLocale))
+            } else {
+                stat.month.format(DateTimeFormatter.ofPattern("yyyy/M", numberLocale))
+            }
+            binding.insightsCalendarGrid.addView(
+                calendarMonthCell(
+                    label = label,
+                    value = calendarMetricValue(stat.income, stat.expense),
+                    scale = scale
+                )
+            )
+        }
+    }
+
+    private fun renderProjectYearCalendar(
+        currentTransactions: List<IndexedTransaction>,
+        firstDate: LocalDate,
+        lastDate: LocalDate
+    ) {
+        val grouped = currentTransactions.groupBy {
+            Instant.ofEpochMilli(it.source.timestampMillis).atZone(java.time.ZoneId.systemDefault()).year
+        }
+        val startYear = firstDate.year
+        val endYear = lastDate.year
+        val stats = (startYear..endYear).map { year ->
+            val bucket = grouped[year].orEmpty()
+            YearCalendarStat(
+                year = year,
+                income = bucket.sumOf { if (it.source.type == TransactionType.INCOME) it.source.amount else 0.0 },
+                expense = bucket.sumOf { if (it.source.type == TransactionType.EXPENSE) it.source.amount else 0.0 }
+            )
+        }
+        val values = stats.map { calendarMetricValue(it.income, it.expense) }
+        val scale = ToneScale(
+            maxValue = values.maxOfOrNull { abs(it) } ?: 0.0,
+            positiveMax = values.filter { it > 0 }.maxOrNull() ?: 0.0,
+            negativeMax = values.filter { it < 0 }.maxOfOrNull { abs(it) } ?: 0.0
+        )
+        stats.forEach { stat ->
+            binding.insightsCalendarGrid.addView(
+                calendarMonthCell(
+                    label = stat.year.toString(),
+                    value = calendarMetricValue(stat.income, stat.expense),
+                    scale = scale
+                )
+            )
+        }
     }
 
     private fun renderMonthCalendar(currentTransactions: List<IndexedTransaction>) {
@@ -678,7 +956,11 @@ class InsightsFragment : Fragment() {
         }
     }
 
-    private fun calendarDayCell(dayLabel: String, value: Double, scale: ToneScale): View {
+    private fun calendarDayCell(
+        dayLabel: String,
+        value: Double,
+        scale: ToneScale
+    ): View {
         val tone = calendarTone(value, scale)
         return SquareLinearLayout(requireContext()).apply {
             orientation = LinearLayout.VERTICAL
@@ -704,6 +986,42 @@ class InsightsFragment : Fragment() {
                 includeFontPadding = false
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, calendarAmountSize(formatCalendarAmount(value), true))
                 setTextColor(tone.primaryTextColor)
+            })
+        }
+    }
+
+    private fun calendarMonthDivider(month: YearMonth): View {
+        val monthText = month.format(DateTimeFormatter.ofPattern("yyyy-MM", numberLocale))
+        return LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            layoutParams = GridLayout.LayoutParams().apply {
+                width = ViewGroup.LayoutParams.MATCH_PARENT
+                height = ViewGroup.LayoutParams.WRAP_CONTENT
+                columnSpec = GridLayout.spec(0, 7)
+                setMargins(dpInt(2), dpInt(8), dpInt(2), dpInt(4))
+            }
+            addView(View(requireContext()).apply {
+                layoutParams = LinearLayout.LayoutParams(0, dpInt(1f), 1f)
+                setBackgroundColor(color(R.color.insights_surface_variant))
+            })
+            addView(TextView(requireContext()).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    marginStart = dpInt(8)
+                    marginEnd = dpInt(8)
+                }
+                text = monthText
+                typeface = Typeface.create(ResourcesCompat.getFont(requireContext(), R.font.inter_family), 700, false)
+                includeFontPadding = false
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                setTextColor(color(R.color.insights_on_surface_variant))
+            })
+            addView(View(requireContext()).apply {
+                layoutParams = LinearLayout.LayoutParams(0, dpInt(1f), 1f)
+                setBackgroundColor(color(R.color.insights_surface_variant))
             })
         }
     }
@@ -750,6 +1068,9 @@ class InsightsFragment : Fragment() {
         }
     }
     private fun openPeriodPicker() {
+        if (uiState.granularity == InsightsGranularity.ALL) {
+            return
+        }
         val dialog = if (uiState.granularity == InsightsGranularity.MONTH) {
             PeriodPickerDialogFragment.newMonthPicker(
                 requestKey = INSIGHTS_PERIOD_PICKER_REQUEST_KEY,
@@ -811,11 +1132,38 @@ class InsightsFragment : Fragment() {
     }
 
     private fun getTransactionsForPeriod(index: TransactionIndex, offset: Int): List<IndexedTransaction> {
+        if (uiState.granularity == InsightsGranularity.ALL) {
+            return index.transactions
+        }
         return if (uiState.granularity == InsightsGranularity.MONTH) {
             val month = YearMonth.of(uiState.year, uiState.monthIndex + 1).plusMonths(offset.toLong())
             index.byMonth[MonthBucket(month.year, month.monthValue - 1)].orEmpty()
         } else {
             index.byYear[uiState.year + offset].orEmpty()
+        }
+    }
+
+    private fun applyCalendarGridOuterDivider(enabled: Boolean) {
+        if (!enabled) {
+            binding.insightsCalendarGrid.background = null
+            binding.insightsCalendarGrid.setPadding(0, 0, 0, 0)
+            return
+        }
+        background(
+            binding.insightsCalendarGrid,
+            color(R.color.insights_surface_container_low),
+            radiusDp = 10f,
+            strokeColor = color(R.color.insights_surface_variant),
+            strokeWidthDp = 1f
+        )
+        binding.insightsCalendarGrid.setPadding(dpInt(1), dpInt(1), dpInt(1), dpInt(1))
+    }
+
+    private fun currentScopeTransactions(index: TransactionIndex): List<IndexedTransaction> {
+        return if (uiState.granularity == InsightsGranularity.ALL) {
+            index.transactions
+        } else {
+            getTransactionsForPeriod(index, 0)
         }
     }
 
@@ -829,9 +1177,106 @@ class InsightsFragment : Fragment() {
     }
 
     private fun buildBuckets(transactions: List<IndexedTransaction>): List<InsightsTrendBucket> {
+        if (uiState.granularity == InsightsGranularity.ALL) {
+            if (transactions.isEmpty()) return emptyList()
+            val groupedByDate = transactions.groupBy {
+                Instant.ofEpochMilli(it.source.timestampMillis).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+            }
+            val firstDate = groupedByDate.keys.minOrNull() ?: return emptyList()
+            val lastDate = groupedByDate.keys.maxOrNull() ?: firstDate
+            val totalDays = java.time.temporal.ChronoUnit.DAYS.between(firstDate, lastDate).toInt() + 1
+
+            if (totalDays <= 30) {
+                return (0 until totalDays).map { offset ->
+                    val date = firstDate.plusDays(offset.toLong())
+                    val bucket = groupedByDate[date].orEmpty()
+                    InsightsTrendBucket(
+                        label = date.dayOfMonth.toString(),
+                        income = bucket.sumOf { if (it.source.type == TransactionType.INCOME) it.source.amount else 0.0 },
+                        expense = bucket.sumOf { if (it.source.type == TransactionType.EXPENSE) it.source.amount else 0.0 }
+                    )
+                }
+            }
+
+            if (totalDays <= 365) {
+                val weekLabelFormatter = if (localeTag == "en") {
+                    DateTimeFormatter.ofPattern("MM/dd", numberLocale)
+                } else {
+                    DateTimeFormatter.ofPattern("M/d", numberLocale)
+                }
+                var weekStart = firstDate.minusDays((firstDate.dayOfWeek.value - 1).toLong())
+                val buckets = mutableListOf<InsightsTrendBucket>()
+                while (weekStart <= lastDate) {
+                    val weekEnd = weekStart.plusDays(6)
+                    val displayStart = maxOf(firstDate, weekStart)
+                    val displayEnd = minOf(lastDate, weekEnd)
+                    var income = 0.0
+                    var expense = 0.0
+                    var dateCursor = weekStart
+                    while (!dateCursor.isAfter(weekEnd)) {
+                        if (!dateCursor.isBefore(firstDate) && !dateCursor.isAfter(lastDate)) {
+                            val bucket = groupedByDate[dateCursor].orEmpty()
+                            income += bucket.sumOf { if (it.source.type == TransactionType.INCOME) it.source.amount else 0.0 }
+                            expense += bucket.sumOf { if (it.source.type == TransactionType.EXPENSE) it.source.amount else 0.0 }
+                        }
+                        dateCursor = dateCursor.plusDays(1)
+                    }
+                    buckets += InsightsTrendBucket(
+                        label = weekStart.format(weekLabelFormatter),
+                        detailLabel = "${displayStart.format(weekLabelFormatter)}-${displayEnd.format(weekLabelFormatter)}",
+                        income = income,
+                        expense = expense
+                    )
+                    weekStart = weekStart.plusDays(7)
+                }
+                return buckets
+            }
+
+            val totalYears = java.time.temporal.ChronoUnit.YEARS.between(firstDate, lastDate).toInt() + 1
+            if (totalYears > 3) {
+                val groupedByYear = transactions.groupBy {
+                    Instant.ofEpochMilli(it.source.timestampMillis).atZone(java.time.ZoneId.systemDefault()).year
+                }
+                val startYear = firstDate.year
+                val endYear = lastDate.year
+                return (startYear..endYear).map { year ->
+                    val bucket = groupedByYear[year].orEmpty()
+                    InsightsTrendBucket(
+                        label = year.toString(),
+                        income = bucket.sumOf { if (it.source.type == TransactionType.INCOME) it.source.amount else 0.0 },
+                        expense = bucket.sumOf { if (it.source.type == TransactionType.EXPENSE) it.source.amount else 0.0 }
+                    )
+                }
+            } else {
+                val groupedByMonth = transactions.groupBy {
+                    YearMonth.from(Instant.ofEpochMilli(it.source.timestampMillis).atZone(java.time.ZoneId.systemDefault()))
+                }
+                val startMonth = YearMonth.from(firstDate)
+                val endMonth = YearMonth.from(lastDate)
+                val monthCount = java.time.temporal.ChronoUnit.MONTHS.between(startMonth, endMonth).toInt() + 1
+                return (0 until monthCount).map { offset ->
+                    val month = startMonth.plusMonths(offset.toLong())
+                    val bucket = groupedByMonth[month].orEmpty()
+                    val label = if (localeTag == "en") {
+                        month.format(DateTimeFormatter.ofPattern("MMM yy", numberLocale))
+                    } else {
+                        month.format(DateTimeFormatter.ofPattern("yyyy/M", numberLocale))
+                    }
+                    InsightsTrendBucket(
+                        label = label,
+                        income = bucket.sumOf { if (it.source.type == TransactionType.INCOME) it.source.amount else 0.0 },
+                        expense = bucket.sumOf { if (it.source.type == TransactionType.EXPENSE) it.source.amount else 0.0 }
+                    )
+                }
+            }
+        }
         return if (uiState.granularity == InsightsGranularity.YEAR) {
             MutableList(12) { monthIndex ->
-                InsightsTrendBucket(monthLabel(monthIndex, uiState.year), 0.0, 0.0)
+                InsightsTrendBucket(
+                    label = monthLabel(monthIndex, uiState.year),
+                    income = 0.0,
+                    expense = 0.0
+                )
             }.also { buckets ->
                 transactions.forEach { transaction ->
                     val current = buckets[transaction.monthIndex]
@@ -844,7 +1289,11 @@ class InsightsFragment : Fragment() {
         } else {
             val days = YearMonth.of(uiState.year, uiState.monthIndex + 1).lengthOfMonth()
             MutableList(days) { day ->
-                InsightsTrendBucket((day + 1).toString(), 0.0, 0.0)
+                InsightsTrendBucket(
+                    label = (day + 1).toString(),
+                    income = 0.0,
+                    expense = 0.0
+                )
             }.also { buckets ->
                 transactions.forEach { transaction ->
                     val index = transaction.day - 1
@@ -885,15 +1334,29 @@ class InsightsFragment : Fragment() {
     }
 
     private fun selectedBudgetCap(): Double? {
+        if (uiState.granularity == InsightsGranularity.ALL) {
+            return viewModel.getTotalBudget()
+        }
         return if (uiState.granularity == InsightsGranularity.MONTH) {
             budgetMap[YearMonth.of(uiState.year, uiState.monthIndex + 1)]
         } else {
-            val values = (1..12).mapNotNull { month -> budgetMap[YearMonth.of(uiState.year, month)] }
-            if (values.isEmpty()) null else values.sum()
+            viewModel.getYearlyBudget(uiState.year)
         }
     }
 
     private fun getPeriodProgress(): PeriodProgress {
+        if (uiState.granularity == InsightsGranularity.ALL) {
+            val dates = transactionIndex?.transactions.orEmpty().map {
+                Instant.ofEpochMilli(it.source.timestampMillis).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+            }
+            if (dates.isEmpty()) {
+                return PeriodProgress(totalUnits = 1, elapsedUnits = 1, isCurrentPeriod = false)
+            }
+            val firstDate = dates.minOrNull() ?: LocalDate.now()
+            val lastDate = dates.maxOrNull() ?: firstDate
+            val totalDays = java.time.temporal.ChronoUnit.DAYS.between(firstDate, lastDate).toInt() + 1
+            return PeriodProgress(totalUnits = totalDays, elapsedUnits = totalDays, isCurrentPeriod = false)
+        }
         val now = LocalDate.now()
         return if (uiState.granularity == InsightsGranularity.MONTH) {
             val currentPeriod = now.year == uiState.year && now.monthValue == uiState.monthIndex + 1
@@ -932,7 +1395,9 @@ class InsightsFragment : Fragment() {
         if (currentExpenses.isEmpty()) return emptyList()
         var baselineExpenses = previousTransactions.filter { it.source.type == TransactionType.EXPENSE }
         if (baselineExpenses.isEmpty()) {
-            val startMillis = if (uiState.granularity == InsightsGranularity.MONTH) {
+            val startMillis = if (uiState.granularity == InsightsGranularity.ALL) {
+                currentTransactions.minOfOrNull { it.source.timestampMillis } ?: 0L
+            } else if (uiState.granularity == InsightsGranularity.MONTH) {
                 LocalDate.of(uiState.year, uiState.monthIndex + 1, 1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
             } else {
                 LocalDate.of(uiState.year, 1, 1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
@@ -972,6 +1437,7 @@ class InsightsFragment : Fragment() {
     private fun updateToggleStyles() {
         styleGranularityToggle(binding.insightsGranularityMonth, uiState.granularity == InsightsGranularity.MONTH)
         styleGranularityToggle(binding.insightsGranularityYear, uiState.granularity == InsightsGranularity.YEAR)
+        styleGranularityToggle(binding.insightsGranularityAll, uiState.granularity == InsightsGranularity.ALL)
         styleSliderToggle(binding.insightsTrendMetricExpense, uiState.trendMetric == InsightsMetric.EXPENSE)
         styleSliderToggle(binding.insightsTrendMetricIncome, uiState.trendMetric == InsightsMetric.INCOME)
         styleSliderToggle(binding.insightsTrendMetricBalance, uiState.trendMetric == InsightsMetric.BALANCE)
@@ -1002,6 +1468,14 @@ class InsightsFragment : Fragment() {
     }
 
     private fun currentPeriodLabel(): String {
+        if (uiState.granularity == InsightsGranularity.ALL) {
+            val years = transactionIndex?.transactions.orEmpty().map { it.year }
+            if (years.isEmpty()) {
+                val year = LocalDate.now().year
+                return "$year-$year"
+            }
+            return "${years.minOrNull() ?: LocalDate.now().year}-${years.maxOrNull() ?: LocalDate.now().year}"
+        }
         return if (uiState.granularity == InsightsGranularity.MONTH) {
             val yearMonth = YearMonth.of(uiState.year, uiState.monthIndex + 1)
             if (localeTag == "en") {
@@ -1014,7 +1488,12 @@ class InsightsFragment : Fragment() {
         }
     }
 
-    private fun compareLabel(): String = if (uiState.granularity == InsightsGranularity.MONTH) text.vsLastMonth else text.vsLastYear
+    private fun compareLabel(): String {
+        if (uiState.granularity == InsightsGranularity.ALL) {
+            return ""
+        }
+        return if (uiState.granularity == InsightsGranularity.MONTH) text.vsLastMonth else text.vsLastYear
+    }
 
     private fun monthLabel(monthIndex: Int, year: Int): String {
         return if (localeTag == "en") {
@@ -1264,6 +1743,9 @@ class InsightsFragment : Fragment() {
     private data class PeriodProgress(val totalUnits: Int, val elapsedUnits: Int, val isCurrentPeriod: Boolean)
     private data class Anomaly(val categoryName: String, val amount: Double, val baseline: Double, val severity: Double)
     private data class CalendarStat(val dayLabel: Int, val monthIndex: Int, val income: Double, val expense: Double)
+    private data class ProjectCalendarStat(val date: LocalDate, val income: Double, val expense: Double)
+    private data class ProjectMonthCalendarStat(val month: YearMonth, val income: Double, val expense: Double)
+    private data class YearCalendarStat(val year: Int, val income: Double, val expense: Double)
     private data class ToneScale(val maxValue: Double, val positiveMax: Double, val negativeMax: Double)
     private data class CellTone(val fillColor: Int, val strokeColor: Int, val primaryTextColor: Int)
 
@@ -1271,8 +1753,23 @@ class InsightsFragment : Fragment() {
         private const val INSIGHTS_PERIOD_PICKER_REQUEST_KEY = "insights_period_picker_result"
         private const val CNY_SYMBOL = "\uFFE5"
         private const val CATEGORY_VISIBLE_LIMIT = 5
+        private const val ARG_DEFAULT_GRANULARITY = "arg_default_granularity"
+        private const val ARG_DEFAULT_YEAR = "arg_default_year"
+        private const val ARG_DEFAULT_MONTH_INDEX = "arg_default_month_index"
 
-        fun newInstance(): InsightsFragment = InsightsFragment()
+        fun newInstance(
+            defaultGranularity: String = "MONTH",
+            defaultYear: Int? = null,
+            defaultMonthIndex: Int? = null
+        ): InsightsFragment {
+            return InsightsFragment().apply {
+                arguments = Bundle().apply {
+                    putString(ARG_DEFAULT_GRANULARITY, defaultGranularity)
+                    defaultYear?.let { putInt(ARG_DEFAULT_YEAR, it) }
+                    defaultMonthIndex?.let { putInt(ARG_DEFAULT_MONTH_INDEX, it) }
+                }
+            }
+        }
     }
 }
 

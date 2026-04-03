@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="home_month_selector_placeholder">2026-03</string>
     <string name="home_amount_placeholder">&#165;.00</string>
@@ -12,11 +12,19 @@
     <string name="home_trend_summary_both_format">Income: %1$s | Expense: %2$s</string>
     <string name="home_selected_day_summary_format">%1$s  Income: %2$s | Expense: %3$s</string>
     <string name="home_budget_for_month_format">Budget for %1$s</string>
+    <string name="home_budget_for_year_format">Budget for %1$d</string>
+    <string name="home_budget_for_all_format">Total Budget</string>
+    <string name="home_month_selector_all">All</string>
+    <string name="home_month_selector_pick_month">Select Month</string>
+    <string name="home_scope_all_spending">All-time Spending</string>
+    <string name="home_scope_yearly_spending">Current Year Spending</string>
     <string name="home_budget_input_invalid_decimals">Please enter up to 2 decimal places</string>
     <string name="home_budget_input_invalid_positive">Please enter a positive number</string>
     <string name="home_recorded_at_format">RECORDED AT %1$s</string>
 
     <string name="dialog_monthly_budget_title">Set Monthly Budget</string>
+    <string name="dialog_yearly_budget_title">Set Yearly Budget</string>
+    <string name="dialog_total_budget_title">Set Total Budget</string>
     <string name="dialog_monthly_budget_hint">Monthly Budget</string>
     <string name="dialog_delete_title">Delete Transaction</string>
     <string name="dialog_delete_subtitle">This action cannot be undone.</string>
@@ -38,6 +46,12 @@
     <string name="dialog_trend_filter_time_range">Time Range</string>
     <string name="dialog_trend_filter_7d">7d</string>
     <string name="dialog_trend_filter_15d">15d</string>
+    <string name="refund">Refund</string>
+    <string name="refund_amount">Refund Amount</string>
+    <string name="submit">Submit</string>
+    <string name="refund_original_and_refunded_format">Original: %1$s  Refunded: %2$s</string>
+    <string name="refund_amount_too_large_format">Refund amount cannot exceed %1$s</string>
+    <string name="transaction_refunded_amount_format">Refunded %1$s</string>
 
     <string name="day_income_format">Income: %1$s</string>
     <string name="day_expense_format">Expense: %1$s</string>
@@ -76,3 +90,6 @@
     <string name="category_investment">Invest</string>
     <string name="category_refund">Refund</string>
 </resources>
+
+
+

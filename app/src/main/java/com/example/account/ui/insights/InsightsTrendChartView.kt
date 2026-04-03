@@ -16,6 +16,7 @@ import java.text.DecimalFormatSymbols
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.max
+import kotlin.math.min
 
 class InsightsTrendChartView @JvmOverloads constructor(
     context: Context,
@@ -148,16 +149,30 @@ class InsightsTrendChartView @JvmOverloads constructor(
             InsightsMetric.INCOME -> colors.income
             InsightsMetric.BALANCE -> colors.balance
         }
-        val barWidth = if (granularity == InsightsGranularity.YEAR) dp(16f) else dp(6f)
         val minVisibleHeight = layout.chartHeight * 0.06f
         val slotWidth = layout.chartWidth / buckets.size.toFloat()
 
+        val xPositions = FloatArray(buckets.size) { index ->
+            layout.chartLeft + slotWidth * (index + 0.5f)
+        }
+        fun yForValue(value: Double): Float {
+            val ratio = ((value - minValue) / axisRange).toFloat()
+            return layout.chartBottom - (layout.chartHeight * ratio)
+        }
+
+        val barWidth = when {
+            buckets.size <= 1 -> slotWidth * 0.82f
+            buckets.size <= 5 -> slotWidth * 0.74f
+            buckets.size <= 12 -> slotWidth * 0.64f
+            granularity == InsightsGranularity.YEAR -> min(slotWidth * 0.52f, dp(16f))
+            else -> min(slotWidth * 0.45f, dp(10f))
+        }
         buckets.forEachIndexed { index, bucket ->
             val value = metricValue(bucket)
             val absValue = abs(value)
             if (absValue <= 0.0) return@forEachIndexed
 
-            val cx = layout.chartLeft + slotWidth * (index + 0.5f)
+            val cx = xPositions[index]
             val heightPx = max(minVisibleHeight, ((absValue / axisRange) * layout.chartHeight).toFloat())
             val left = cx - (barWidth / 2f)
             val right = cx + (barWidth / 2f)
@@ -189,25 +204,70 @@ class InsightsTrendChartView @JvmOverloads constructor(
             canvas.drawRoundRect(rect, barWidth, barWidth, barPaint)
         }
 
-        val monthLabelIndices = linkedSetOf(0, 7, 14, 21, buckets.lastIndex)
-        buckets.forEachIndexed { index, bucket ->
-            val shouldDraw = granularity == InsightsGranularity.YEAR || monthLabelIndices.contains(index)
-            if (!shouldDraw) return@forEachIndexed
-            labelTextPaint.color = if (selected == index) barColor else colors.textVariant
-            val cx = layout.chartLeft + slotWidth * (index + 0.5f)
-            val textHalfWidth = labelTextPaint.measureText(bucket.label) / 2f
-            val clampedCx = cx.coerceIn(
-                layout.chartLeft + textHalfWidth + dp(1f),
-                layout.chartRight - textHalfWidth - dp(6f)
+        val maxLabelWidth = buckets.maxOfOrNull { labelTextPaint.measureText(it.label) } ?: 0f
+        val minLabelSpacing = maxLabelWidth + dp(8f)
+        val dynamicStep = kotlin.math.ceil(minLabelSpacing / slotWidth).toInt().coerceAtLeast(1)
+        val monthLabelIndices = run {
+            val indices = linkedSetOf<Int>()
+            var cursor = 0
+            while (cursor <= buckets.lastIndex) {
+                indices.add(cursor)
+                cursor += dynamicStep
+            }
+            indices.add(buckets.lastIndex)
+            indices
+        }
+        if (buckets.isNotEmpty()) {
+            val edgeGap = dp(4f)
+            val lastIndex = buckets.lastIndex
+            val firstHalf = labelTextPaint.measureText(buckets.first().label) / 2f
+            val firstCx = xPositions.first().coerceIn(
+                layout.chartLeft + firstHalf + dp(1f),
+                layout.chartRight - firstHalf - dp(6f)
             )
-            canvas.drawText(bucket.label, clampedCx, layout.labelBaseline, labelTextPaint)
+            val firstLeft = firstCx - firstHalf
+            val firstRight = firstCx + firstHalf
+
+            val lastHalf = labelTextPaint.measureText(buckets.last().label) / 2f
+            val lastCx = xPositions.last().coerceIn(
+                layout.chartLeft + lastHalf + dp(1f),
+                layout.chartRight - lastHalf - dp(6f)
+            )
+            val lastLeft = lastCx - lastHalf
+            val lastRight = lastCx + lastHalf
+
+            labelTextPaint.color = if (selected == 0) barColor else colors.textVariant
+            canvas.drawText(buckets.first().label, firstCx, layout.labelBaseline, labelTextPaint)
+            var lastDrawnRight = firstRight
+
+            monthLabelIndices.forEach { index ->
+                if (index <= 0 || index >= lastIndex) return@forEach
+                val bucket = buckets[index]
+                val textHalfWidth = labelTextPaint.measureText(bucket.label) / 2f
+                val cx = xPositions[index].coerceIn(
+                    layout.chartLeft + textHalfWidth + dp(1f),
+                    layout.chartRight - textHalfWidth - dp(6f)
+                )
+                val labelLeft = cx - textHalfWidth
+                val labelRight = cx + textHalfWidth
+                if (labelLeft <= lastDrawnRight + edgeGap) return@forEach
+                if (labelRight >= lastLeft - edgeGap) return@forEach
+                labelTextPaint.color = if (selected == index) barColor else colors.textVariant
+                canvas.drawText(bucket.label, cx, layout.labelBaseline, labelTextPaint)
+                lastDrawnRight = labelRight
+            }
+
+            if (lastIndex > 0) {
+                labelTextPaint.color = if (selected == lastIndex) barColor else colors.textVariant
+                canvas.drawText(buckets.last().label, lastCx, layout.labelBaseline, labelTextPaint)
+            }
         }
 
         selected?.takeIf { it in buckets.indices }?.let { index ->
             val value = metricValue(buckets[index])
             if (abs(value) > 0.0) {
                 val cx = layout.chartLeft + slotWidth * (index + 0.5f)
-                val title = buckets[index].label
+                val title = buckets[index].detailLabel
                 val amount = money(value)
                 val width = max(
                     tooltipTitlePaint.measureText(title),

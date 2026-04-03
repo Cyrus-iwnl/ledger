@@ -21,6 +21,17 @@ enum class CurrencyCode(val code: String, val symbol: String) {
     HKD("HKD", "HK$")
 }
 
+enum class LedgerBookType {
+    NORMAL,
+    PROJECT
+}
+
+data class LedgerBook(
+    val id: String,
+    val name: String,
+    val type: LedgerBookType = LedgerBookType.NORMAL
+)
+
 data class LedgerCategory(
     val id: String,
     val name: String,
@@ -37,7 +48,8 @@ data class LedgerTransaction(
     val amount: Double,
     val note: String,
     val timestampMillis: Long,
-    val currency: CurrencyCode = CurrencyCode.CNY
+    val currency: CurrencyCode = CurrencyCode.CNY,
+    val refundedAmount: Double = 0.0
 )
 
 data class DaySummary(
@@ -134,3 +146,9 @@ object LedgerFormatters {
     fun shortLabel(date: LocalDate): String = date.format(getShortDateFormatter())
 }
 
+fun LedgerTransaction.originalExpenseAmount(): Double {
+    if (type != TransactionType.EXPENSE) {
+        return amount
+    }
+    return amount + refundedAmount
+}

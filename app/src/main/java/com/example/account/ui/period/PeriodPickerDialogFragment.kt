@@ -49,6 +49,18 @@ class PeriodPickerDialogFragment : DialogFragment() {
     private val closeText: String
         get() = requireArguments().getString(ARG_CLOSE_TEXT).orEmpty()
 
+    private val allText: String
+        get() = requireArguments().getString(ARG_ALL_TEXT).orEmpty()
+
+    private val yearText: String
+        get() = requireArguments().getString(ARG_YEAR_TEXT).orEmpty()
+
+    private val enableAllToggle: Boolean
+        get() = requireArguments().getBoolean(ARG_ENABLE_ALL_TOGGLE, false)
+
+    private val selectedScopeMode: String
+        get() = requireArguments().getString(ARG_SELECTED_SCOPE_MODE) ?: MODE_MONTH
+
     private val localeTag: String
         get() = requireArguments().getString(ARG_LOCALE_TAG) ?: "en"
 
@@ -64,10 +76,12 @@ class PeriodPickerDialogFragment : DialogFragment() {
     }
 
     private var displayedYear: Int = 0
+    private var activeScopeMode: String = MODE_MONTH
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         _binding = DialogPeriodPickerBinding.inflate(LayoutInflater.from(requireContext()))
         displayedYear = requireArguments().getInt(ARG_DISPLAY_YEAR, selectedYear)
+        activeScopeMode = if (enableAllToggle) selectedScopeMode else mode
 
         applyStaticText()
         applyStaticStyles()
@@ -110,21 +124,55 @@ class PeriodPickerDialogFragment : DialogFragment() {
 
     private fun applyStaticText() {
         binding.periodPickerTitle.text = titleText
-        binding.periodPickerClose.contentDescription = closeText
+        val showScopeToggle = mode == MODE_MONTH && enableAllToggle
+        binding.periodPickerTitle.isVisible = !showScopeToggle
+        binding.periodPickerScopeGroup.isVisible = showScopeToggle
+        binding.periodPickerMonthToggle.text = titleText
+        binding.periodPickerYearToggle.text = yearText
+        binding.periodPickerAllToggle.text = allText
     }
 
     private fun applyStaticStyles() {
         val white = color(R.color.insights_surface_container_lowest)
         val surfaceLow = color(R.color.insights_surface_container_low)
+        val surfaceVariant = color(R.color.insights_surface_variant)
         background(binding.periodPickerNav, surfaceLow, 12f)
         background(binding.periodPickerPrev, white, 12f)
         background(binding.periodPickerNext, white, 12f)
+        styleScopeToggles(surfaceLow, surfaceVariant)
     }
 
     private fun bindListeners() {
         binding.periodPickerOverlay.setOnClickListener { dismissAllowingStateLoss() }
         binding.periodPickerCard.setOnClickListener { }
-        binding.periodPickerClose.setOnClickListener { dismissAllowingStateLoss() }
+        binding.periodPickerMonthToggle.setOnClickListener {
+            if (activeScopeMode == MODE_MONTH) return@setOnClickListener
+            activeScopeMode = MODE_MONTH
+            val surfaceLow = color(R.color.insights_surface_container_low)
+            val surfaceVariant = color(R.color.insights_surface_variant)
+            styleScopeToggles(surfaceLow, surfaceVariant)
+            renderOptions()
+        }
+        binding.periodPickerYearToggle.setOnClickListener {
+            if (activeScopeMode == MODE_YEAR) return@setOnClickListener
+            activeScopeMode = MODE_YEAR
+            val surfaceLow = color(R.color.insights_surface_container_low)
+            val surfaceVariant = color(R.color.insights_surface_variant)
+            styleScopeToggles(surfaceLow, surfaceVariant)
+            renderOptions()
+        }
+        binding.periodPickerAllToggle.setOnClickListener {
+            if (activeScopeMode == MODE_ALL) return@setOnClickListener
+            activeScopeMode = MODE_ALL
+            val surfaceLow = color(R.color.insights_surface_container_low)
+            val surfaceVariant = color(R.color.insights_surface_variant)
+            styleScopeToggles(surfaceLow, surfaceVariant)
+            renderOptions()
+        }
+        binding.periodPickerConfirmAll.setOnClickListener {
+            publishAllResult()
+            dismissAllowingStateLoss()
+        }
         binding.periodPickerPrev.setOnClickListener {
             displayedYear -= 1
             renderOptions()
@@ -136,12 +184,26 @@ class PeriodPickerDialogFragment : DialogFragment() {
     }
 
     private fun renderOptions() {
-        if (mode == MODE_MONTH) {
-            binding.periodPickerNav.isVisible = true
-            renderMonthOptions()
-        } else {
-            binding.periodPickerNav.isVisible = false
-            renderYearOptions()
+        val effectiveMode = if (enableAllToggle) activeScopeMode else mode
+        when (effectiveMode) {
+            MODE_MONTH -> {
+                binding.periodPickerNav.isVisible = true
+                binding.periodPickerOptions.isVisible = true
+                binding.periodPickerConfirmAll.isVisible = false
+                renderMonthOptions()
+            }
+            MODE_YEAR -> {
+                binding.periodPickerNav.isVisible = false
+                binding.periodPickerOptions.isVisible = true
+                binding.periodPickerConfirmAll.isVisible = false
+                renderYearOptions()
+            }
+            MODE_ALL -> {
+                binding.periodPickerNav.isVisible = false
+                binding.periodPickerOptions.isVisible = false
+                binding.periodPickerOptions.removeAllViews()
+                binding.periodPickerConfirmAll.isVisible = true
+            }
         }
     }
 
@@ -155,7 +217,7 @@ class PeriodPickerDialogFragment : DialogFragment() {
                     label = year.toString(),
                     active = year == selectedYear
                 ) {
-                    publishResult(year, selectedMonthIndex)
+                    publishResult(MODE_YEAR, year, selectedMonthIndex)
                 }
             )
         }
@@ -170,22 +232,89 @@ class PeriodPickerDialogFragment : DialogFragment() {
                     label = monthLabel(monthIndex, displayedYear),
                     active = displayedYear == selectedYear && monthIndex == selectedMonthIndex
                 ) {
-                    publishResult(displayedYear, monthIndex)
+                    publishResult(MODE_MONTH, displayedYear, monthIndex)
                 }
             )
         }
     }
 
-    private fun publishResult(year: Int, monthIndex: Int) {
+    private fun publishResult(resultMode: String, year: Int, monthIndex: Int) {
         parentFragmentManager.setFragmentResult(
             requestKey,
             Bundle().apply {
-                putString(RESULT_MODE, mode)
+                putString(RESULT_MODE, resultMode)
                 putInt(RESULT_YEAR, year)
                 putInt(RESULT_MONTH_INDEX, monthIndex)
+                putBoolean(RESULT_IS_ALL, false)
             }
         )
         dismissAllowingStateLoss()
+    }
+
+    private fun publishAllResult() {
+        parentFragmentManager.setFragmentResult(
+            requestKey,
+            Bundle().apply {
+                putString(RESULT_MODE, MODE_ALL)
+                putInt(RESULT_YEAR, selectedYear)
+                putInt(RESULT_MONTH_INDEX, selectedMonthIndex)
+                putBoolean(RESULT_IS_ALL, true)
+            }
+        )
+    }
+
+    private fun styleScopeToggles(surfaceLow: Int, surfaceVariant: Int) {
+        if (!binding.periodPickerScopeGroup.isVisible) {
+            return
+        }
+        background(binding.periodPickerScopeGroup, surfaceLow, 999f)
+        val monthActive = activeScopeMode == MODE_MONTH
+        val yearActive = activeScopeMode == MODE_YEAR
+        val allActive = activeScopeMode == MODE_ALL
+        background(
+            view = binding.periodPickerMonthToggle,
+            fillColor = if (monthActive) color(R.color.insights_primary) else Color.TRANSPARENT,
+            radiusDp = 999f,
+            strokeColor = if (monthActive) Color.TRANSPARENT else Color.TRANSPARENT
+        )
+        binding.periodPickerMonthToggle.setTextColor(
+            if (monthActive) color(R.color.insights_on_primary) else color(R.color.insights_on_surface)
+        )
+        binding.periodPickerMonthToggle.typeface = Typeface.create(
+            ResourcesCompat.getFont(requireContext(), R.font.inter_family),
+            if (monthActive) 700 else 600,
+            false
+        )
+
+        background(
+            view = binding.periodPickerYearToggle,
+            fillColor = if (yearActive) color(R.color.insights_primary) else Color.TRANSPARENT,
+            radiusDp = 999f,
+            strokeColor = if (yearActive) Color.TRANSPARENT else Color.TRANSPARENT
+        )
+        binding.periodPickerYearToggle.setTextColor(
+            if (yearActive) color(R.color.insights_on_primary) else color(R.color.insights_on_surface)
+        )
+        binding.periodPickerYearToggle.typeface = Typeface.create(
+            ResourcesCompat.getFont(requireContext(), R.font.inter_family),
+            if (yearActive) 700 else 600,
+            false
+        )
+
+        background(
+            view = binding.periodPickerAllToggle,
+            fillColor = if (allActive) color(R.color.insights_primary) else Color.TRANSPARENT,
+            radiusDp = 999f,
+            strokeColor = if (allActive) Color.TRANSPARENT else Color.TRANSPARENT
+        )
+        binding.periodPickerAllToggle.setTextColor(
+            if (allActive) color(R.color.insights_on_primary) else color(R.color.insights_on_surface)
+        )
+        binding.periodPickerAllToggle.typeface = Typeface.create(
+            ResourcesCompat.getFont(requireContext(), R.font.inter_family),
+            if (allActive) 700 else 600,
+            false
+        )
     }
 
     private fun optionButton(label: String, active: Boolean, onClick: () -> Unit): View {
@@ -256,9 +385,11 @@ class PeriodPickerDialogFragment : DialogFragment() {
         const val RESULT_MODE = "mode"
         const val RESULT_YEAR = "year"
         const val RESULT_MONTH_INDEX = "month_index"
+        const val RESULT_IS_ALL = "is_all"
 
         const val MODE_MONTH = "month"
         const val MODE_YEAR = "year"
+        const val MODE_ALL = "all"
 
         private const val DEFAULT_REQUEST_KEY = "period_picker_result"
         private const val ARG_REQUEST_KEY = "request_key"
@@ -271,6 +402,10 @@ class PeriodPickerDialogFragment : DialogFragment() {
         private const val ARG_MONTH_WORD = "month_word"
         private const val ARG_TITLE = "title"
         private const val ARG_CLOSE_TEXT = "close_text"
+        private const val ARG_ENABLE_ALL_TOGGLE = "enable_all_toggle"
+        private const val ARG_SELECTED_SCOPE_MODE = "selected_scope_mode"
+        private const val ARG_ALL_TEXT = "all_text"
+        private const val ARG_YEAR_TEXT = "year_text"
 
         fun newMonthPicker(
             requestKey: String,
@@ -280,7 +415,12 @@ class PeriodPickerDialogFragment : DialogFragment() {
             localeTag: String,
             monthWord: String,
             title: String,
-            closeText: String
+            closeText: String,
+            enableAllToggle: Boolean = false,
+            selectedScopeMode: String = MODE_MONTH,
+            allText: String = "",
+            yearText: String = "",
+            availableYears: IntArray = intArrayOf()
         ): PeriodPickerDialogFragment {
             return PeriodPickerDialogFragment().apply {
                 arguments = Bundle().apply {
@@ -293,6 +433,13 @@ class PeriodPickerDialogFragment : DialogFragment() {
                     putString(ARG_MONTH_WORD, monthWord)
                     putString(ARG_TITLE, title)
                     putString(ARG_CLOSE_TEXT, closeText)
+                    putBoolean(ARG_ENABLE_ALL_TOGGLE, enableAllToggle)
+                    putString(ARG_SELECTED_SCOPE_MODE, selectedScopeMode)
+                    putString(ARG_ALL_TEXT, allText)
+                    putString(ARG_YEAR_TEXT, yearText)
+                    if (availableYears.isNotEmpty()) {
+                        putIntArray(ARG_AVAILABLE_YEARS, availableYears)
+                    }
                 }
             }
         }

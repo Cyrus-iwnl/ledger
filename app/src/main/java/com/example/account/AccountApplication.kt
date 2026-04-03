@@ -5,7 +5,9 @@ import android.app.Application
 class AccountApplication : Application() {
 
     override fun onCreate() {
-        super.onCreate()
-        CrashLogger.install(this)
+        PerfTrace.measure("AccountApplication.onCreate") {
+            super.onCreate()
+            CrashLogger.install(this)
+        }
     }
 }

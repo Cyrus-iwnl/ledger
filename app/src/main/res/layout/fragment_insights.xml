@@ -131,6 +131,25 @@
                             android:textFontWeight="700"
                             android:textSize="12sp"
                             android:letterSpacing="-0.025" />
+
+                        <androidx.appcompat.widget.AppCompatButton
+                            android:id="@+id/insights_granularity_all"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:background="@android:color/transparent"
+                            android:fontFamily="@font/inter_family"
+                            android:gravity="center"
+                            android:includeFontPadding="false"
+                            android:minWidth="0dp"
+                            android:paddingStart="4dp"
+                            android:paddingEnd="4dp"
+                            android:text="All"
+                            android:textAllCaps="false"
+                            android:textColor="@color/insights_on_surface_variant"
+                            android:textFontWeight="700"
+                            android:textSize="12sp"
+                            android:letterSpacing="-0.025" />
                     </LinearLayout>
 
                     <FrameLayout
@@ -597,8 +616,9 @@
                         <LinearLayout
                             android:id="@+id/insights_metric_savings_card"
                             android:layout_width="0dp"
-                            android:layout_height="116dp"
+                            android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:minHeight="116dp"
                             android:orientation="vertical"
                             android:padding="12dp">
 
@@ -646,8 +666,9 @@
                         <LinearLayout
                             android:id="@+id/insights_metric_budget_card"
                             android:layout_width="0dp"
-                            android:layout_height="116dp"
+                            android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:minHeight="116dp"
                             android:orientation="vertical"
                             android:padding="12dp">
 
@@ -702,8 +723,9 @@
                         <LinearLayout
                             android:id="@+id/insights_metric_expense_activity_card"
                             android:layout_width="0dp"
-                            android:layout_height="116dp"
+                            android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:minHeight="116dp"
                             android:orientation="vertical"
                             android:padding="12dp">
 
@@ -751,8 +773,9 @@
                         <LinearLayout
                             android:id="@+id/insights_metric_income_activity_card"
                             android:layout_width="0dp"
-                            android:layout_height="116dp"
+                            android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:minHeight="116dp"
                             android:orientation="vertical"
                             android:padding="12dp">
 
@@ -801,7 +824,8 @@
                     <LinearLayout
                         android:id="@+id/insights_metric_anomaly_card"
                         android:layout_width="match_parent"
-                        android:layout_height="116dp"
+                        android:layout_height="wrap_content"
+                        android:minHeight="116dp"
                         android:orientation="vertical"
                         android:padding="12dp">
 

@@ -34,112 +34,161 @@
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/dialog_trend_filter_dimension"
-                android:textColor="@color/text_hint"
-                android:textSize="11sp"
-                android:textStyle="bold" />
-
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/filter_mode_group"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                app:selectionRequired="true"
-                app:singleSelection="true">
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/filter_mode_both"
-                    style="@style/Widget.MaterialComponents.Chip.Choice"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/dialog_trend_filter_both"
-                    android:textColor="@color/chip_text_selector"
-                    app:checkedIconVisible="false"
-                    app:chipBackgroundColor="@color/chip_bg_selector"
-                    app:chipCornerRadius="14dp"
-                    app:chipStrokeColor="@color/chip_stroke_selector"
-                    app:chipStrokeWidth="1dp" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/filter_mode_income"
-                    style="@style/Widget.MaterialComponents.Chip.Choice"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/income"
-                    android:textColor="@color/chip_text_selector"
-                    app:checkedIconVisible="false"
-                    app:chipBackgroundColor="@color/chip_bg_selector"
-                    app:chipCornerRadius="14dp"
-                    app:chipStrokeColor="@color/chip_stroke_selector"
-                    app:chipStrokeWidth="1dp" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/filter_mode_expense"
-                    style="@style/Widget.MaterialComponents.Chip.Choice"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/expense"
-                    android:textColor="@color/chip_text_selector"
-                    app:checkedIconVisible="false"
-                    app:chipBackgroundColor="@color/chip_bg_selector"
-                    app:chipCornerRadius="14dp"
-                    app:chipStrokeColor="@color/chip_stroke_selector"
-                    app:chipStrokeWidth="1dp" />
-            </com.google.android.material.chip.ChipGroup>
-
-            <View
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginTop="10dp"
-                android:background="@color/card_stroke" />
-
-            <TextView
-                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:text="@string/dialog_trend_filter_time_range"
-                android:textColor="@color/text_hint"
-                android:textSize="11sp"
-                android:textStyle="bold" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="10dp">
 
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/filter_range_group"
-                android:layout_width="wrap_content"
+                <TextView
+                    android:layout_width="48dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="start"
+                    android:text="@string/dialog_trend_filter_dimension"
+                    android:textColor="@color/text_hint"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:id="@+id/filter_mode_group"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/bg_segment_group_gray"
+                    android:orientation="horizontal"
+                    android:padding="4dp">
+
+                    <androidx.appcompat.widget.AppCompatButton
+                        android:id="@+id/filter_mode_expense"
+                        android:layout_width="0dp"
+                        android:layout_height="36dp"
+                        android:layout_weight="1"
+                        android:background="@android:color/transparent"
+                        android:elevation="0dp"
+                        android:fontFamily="@font/inter_family"
+                        android:includeFontPadding="false"
+                        android:minHeight="0dp"
+                        android:minWidth="0dp"
+                        android:paddingStart="4dp"
+                        android:paddingEnd="4dp"
+                        android:stateListAnimator="@null"
+                        android:textAllCaps="false"
+                        android:text="@string/expense"
+                        android:textColor="@color/text_primary"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <androidx.appcompat.widget.AppCompatButton
+                        android:id="@+id/filter_mode_income"
+                        android:layout_width="0dp"
+                        android:layout_height="36dp"
+                        android:layout_weight="1"
+                        android:background="@android:color/transparent"
+                        android:elevation="0dp"
+                        android:fontFamily="@font/inter_family"
+                        android:includeFontPadding="false"
+                        android:minHeight="0dp"
+                        android:minWidth="0dp"
+                        android:paddingStart="4dp"
+                        android:paddingEnd="4dp"
+                        android:stateListAnimator="@null"
+                        android:textAllCaps="false"
+                        android:text="@string/income"
+                        android:textColor="@color/text_hint"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <androidx.appcompat.widget.AppCompatButton
+                        android:id="@+id/filter_mode_both"
+                        android:layout_width="0dp"
+                        android:layout_height="36dp"
+                        android:layout_weight="1"
+                        android:background="@android:color/transparent"
+                        android:elevation="0dp"
+                        android:fontFamily="@font/inter_family"
+                        android:includeFontPadding="false"
+                        android:minHeight="0dp"
+                        android:minWidth="0dp"
+                        android:paddingStart="4dp"
+                        android:paddingEnd="4dp"
+                        android:stateListAnimator="@null"
+                        android:textAllCaps="false"
+                        android:text="@string/dialog_trend_filter_both"
+                        android:textColor="@color/text_hint"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                app:selectionRequired="true"
-                app:singleSelection="true">
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="10dp">
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/filter_range_7"
-                    style="@style/Widget.MaterialComponents.Chip.Choice"
-                    android:layout_width="wrap_content"
+                <TextView
+                    android:layout_width="48dp"
                     android:layout_height="wrap_content"
-                    android:text="@string/dialog_trend_filter_7d"
-                    android:textColor="@color/chip_text_selector"
-                    app:checkedIconVisible="false"
-                    app:chipBackgroundColor="@color/chip_bg_selector"
-                    app:chipCornerRadius="14dp"
-                    app:chipStrokeColor="@color/chip_stroke_selector"
-                    app:chipStrokeWidth="1dp" />
+                    android:gravity="start"
+                    android:text="@string/dialog_trend_filter_time_range"
+                    android:textColor="@color/text_hint"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/filter_range_15"
-                    style="@style/Widget.MaterialComponents.Chip.Choice"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:id="@+id/filter_range_group"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="@string/dialog_trend_filter_15d"
-                    android:textColor="@color/chip_text_selector"
-                    app:checkedIconVisible="false"
-                    app:chipBackgroundColor="@color/chip_bg_selector"
-                    app:chipCornerRadius="14dp"
-                    app:chipStrokeColor="@color/chip_stroke_selector"
-                    app:chipStrokeWidth="1dp" />
-            </com.google.android.material.chip.ChipGroup>
+                    android:layout_weight="1"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/bg_segment_group_gray"
+                    android:orientation="horizontal"
+                    android:padding="4dp">
+
+                    <androidx.appcompat.widget.AppCompatButton
+                        android:id="@+id/filter_range_7"
+                        android:layout_width="0dp"
+                        android:layout_height="36dp"
+                        android:layout_weight="1"
+                        android:background="@android:color/transparent"
+                        android:elevation="0dp"
+                        android:fontFamily="@font/inter_family"
+                        android:includeFontPadding="false"
+                        android:minHeight="0dp"
+                        android:minWidth="0dp"
+                        android:paddingStart="4dp"
+                        android:paddingEnd="4dp"
+                        android:stateListAnimator="@null"
+                        android:textAllCaps="false"
+                        android:text="@string/dialog_trend_filter_7d"
+                        android:textColor="@color/text_primary"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <androidx.appcompat.widget.AppCompatButton
+                        android:id="@+id/filter_range_15"
+                        android:layout_width="0dp"
+                        android:layout_height="36dp"
+                        android:layout_weight="1"
+                        android:background="@android:color/transparent"
+                        android:elevation="0dp"
+                        android:fontFamily="@font/inter_family"
+                        android:includeFontPadding="false"
+                        android:minHeight="0dp"
+                        android:minWidth="0dp"
+                        android:paddingStart="4dp"
+                        android:paddingEnd="4dp"
+                        android:stateListAnimator="@null"
+                        android:textAllCaps="false"
+                        android:text="@string/dialog_trend_filter_15d"
+                        android:textColor="@color/text_hint"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -152,19 +201,36 @@
                     android:id="@+id/filter_cancel_button"
                     style="@style/Widget.MaterialComponents.Button.TextButton"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="44dp"
+                    android:elevation="0dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:stateListAnimator="@null"
                     android:text="@string/cancel"
-                    android:textColor="@color/text_secondary" />
+                    android:textColor="@color/text_secondary"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/filter_apply_button"
-                    style="@style/Widget.MaterialComponents.Button"
+                    style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
+                    android:layout_height="44dp"
+                    android:layout_marginStart="12dp"
+                    android:elevation="0dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
+                    android:stateListAnimator="@null"
                     android:text="@string/dialog_apply"
                     android:textColor="@android:color/white"
-                    app:backgroundTint="@color/primary_accent" />
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@color/primary_accent"
+                    app:cornerRadius="22dp" />
             </LinearLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>

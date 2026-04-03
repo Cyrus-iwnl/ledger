@@ -3,6 +3,7 @@ package com.example.account.data
 import android.content.Context
 import android.graphics.Color
 import android.util.Log
+import com.example.account.PerfTrace
 import com.example.account.R
 import org.json.JSONArray
 import org.json.JSONObject
@@ -13,16 +14,21 @@ import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 
 class LedgerRepository(context: Context) {
 
     private val appContext = context.applicationContext
-    private val ledgerFile = File(appContext.filesDir, FILE_NAME)
+    private val defaultLedgerFile = File(appContext.filesDir, FILE_NAME)
     private val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val lock = Any()
     private val nextId = AtomicLong(1L)
+    private var ledgers: MutableList<LedgerBook> = mutableListOf()
+    private var currentLedgerId: String = DEFAULT_LEDGER_ID
+    private val transactionsCache: MutableMap<String, List<LedgerTransaction>> = mutableMapOf()
     private fun getSectionDateFormatter(): DateTimeFormatter = DateTimeFormatter.ofPattern("MM.dd EEEE", Locale.getDefault())
+    private fun getSectionDateFormatterWithYear(): DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd EEEE", Locale.getDefault())
 
     val categories: List<LedgerCategory> = listOf(
         LedgerCategory("expense_meals", "Meals", TransactionType.EXPENSE, R.drawable.ic_dashboard_restaurant_24, "restaurant", Color.parseColor("#FF9F89")),
@@ -44,7 +50,7 @@ class LedgerRepository(context: Context) {
         LedgerCategory("expense_home", "Home", TransactionType.EXPENSE, android.R.drawable.ic_menu_gallery, "home", Color.parseColor("#FB923C")),
         LedgerCategory("expense_comm", "Comm", TransactionType.EXPENSE, android.R.drawable.ic_menu_gallery, "call", Color.parseColor("#38BDF8")),
         LedgerCategory("expense_social", "Social", TransactionType.EXPENSE, android.R.drawable.ic_menu_gallery, "groups", Color.parseColor("#2DD4BF")),
-        LedgerCategory("expense_kids", "Kids", TransactionType.EXPENSE, android.R.drawable.ic_menu_gallery, "child_care", Color.parseColor("#F472B6")),
+        LedgerCategory("expense_other", "Other", TransactionType.EXPENSE, android.R.drawable.ic_menu_help, "more_horiz", Color.parseColor("#F472B6")),
         LedgerCategory("income_salary", "Salary", TransactionType.INCOME, android.R.drawable.ic_menu_upload, "payments", Color.parseColor("#76C983")),
         LedgerCategory("income_bonus", "Bonus", TransactionType.INCOME, android.R.drawable.ic_input_add, "savings", Color.parseColor("#ECC344")),
         LedgerCategory("income_investment", "Investment", TransactionType.INCOME, android.R.drawable.ic_menu_send, "trending_up", Color.parseColor("#6DA5E8")),
@@ -52,17 +58,134 @@ class LedgerRepository(context: Context) {
         LedgerCategory("income_other", "Other", TransactionType.INCOME, android.R.drawable.ic_menu_share, "paid", Color.parseColor("#57CDCB"))
     )
     init {
-        ensureSeedData()
+        PerfTrace.measure("LedgerRepository.init") {
+            synchronized(lock) {
+                loadLedgerState()
+                syncBuiltInDataAndNextId()
+            }
+        }
     }
 
-    fun getDashboard(windowDays: Int, month: YearMonth): LedgerDashboard = synchronized(lock) {
+    fun getLedgers(): List<LedgerBook> = synchronized(lock) {
+        ledgers.toList()
+    }
+
+    fun getCurrentLedger(): LedgerBook = synchronized(lock) {
+        ledgers.firstOrNull { it.id == currentLedgerId } ?: ledgers.first()
+    }
+
+    fun switchLedger(ledgerId: String): Boolean = synchronized(lock) {
+        if (ledgerId == currentLedgerId || ledgers.none { it.id == ledgerId }) {
+            return false
+        }
+        currentLedgerId = ledgerId
+        persistLedgerState()
+        syncBuiltInDataAndNextId()
+        true
+    }
+
+    fun addLedger(name: String): LedgerBook = synchronized(lock) {
+        val normalized = name.trim()
+        require(normalized.isNotEmpty()) { "Ledger name cannot be blank." }
+        val book = LedgerBook(
+            id = "ledger_${UUID.randomUUID().toString().replace("-", "")}",
+            name = normalized,
+            type = LedgerBookType.NORMAL
+        )
+        ledgers.add(book)
+        persistLedgerState()
+        book
+    }
+
+    fun deleteLedger(ledgerId: String): Boolean = synchronized(lock) {
+        if (ledgers.size <= 1) {
+            return false
+        }
+        val target = ledgers.firstOrNull { it.id == ledgerId } ?: return false
+        ledgers.remove(target)
+        if (currentLedgerId == target.id) {
+            currentLedgerId = ledgers.first().id
+        }
+        deleteLedgerData(target.id)
+        persistLedgerState()
+        syncBuiltInDataAndNextId()
+        return true
+    }
+
+    fun getDashboard(windowDays: Int, month: YearMonth?, year: Int? = null): LedgerDashboard = synchronized(lock) {
+        PerfTrace.measure("LedgerRepository.getDashboard(windowDays=$windowDays, month=$month, year=$year)") {
+            if (month == null && year == null) {
+                return@measure buildAllTimeDashboard(windowDays)
+            }
+            if (month == null && year != null) {
+                return@measure buildYearDashboard(windowDays, year)
+            }
+            val resolvedMonth = month ?: return@measure buildAllTimeDashboard(windowDays)
+            val zoneId = ZoneId.systemDefault()
+            val allTransactions = loadTransactionsInternal()
+            val monthTransactions = allTransactions.filter {
+                YearMonth.from(java.time.Instant.ofEpochMilli(it.timestampMillis).atZone(zoneId)) == resolvedMonth
+            }
+            val monthStart = resolvedMonth.atDay(1)
+            val monthEnd = resolvedMonth.atEndOfMonth()
+            val today = LocalDate.now(zoneId)
+            val safeWindowDays = windowDays.coerceAtLeast(1)
+            val chartEnd = today
+
+            val chartStart = chartEnd.minusDays((safeWindowDays - 1).toLong())
+            val chartDayCount = java.time.temporal.ChronoUnit.DAYS.between(chartStart, chartEnd).toInt() + 1
+            val chartDaySequence = (0 until chartDayCount).map { chartStart.plusDays(it.toLong()) }
+
+            val summaryDayCount = java.time.temporal.ChronoUnit.DAYS.between(monthStart, monthEnd).toInt() + 1
+            val summaryDaySequence = (0 until summaryDayCount).map { monthStart.plusDays(it.toLong()) }
+
+            val chartPoints = chartDaySequence.map { date ->
+                val bucket = allTransactions.filter { sameDay(it.timestampMillis, date, zoneId) }
+                val income = bucket.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
+                val expense = bucket.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+                ChartPoint(LedgerFormatters.shortLabel(date), income, expense)
+            }
+
+            val totalIncome = monthTransactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
+            val totalExpense = monthTransactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+
+            val daySummaries = summaryDaySequence.reversed().mapNotNull { date ->
+                val bucket = monthTransactions
+                    .filter { sameDay(it.timestampMillis, date, zoneId) }
+                    .sortedByDescending { it.timestampMillis }
+                if (bucket.isEmpty()) {
+                    null
+                } else {
+                    val income = bucket.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
+                    val expense = bucket.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+                    DaySummary(
+                        dateMillis = date.atStartOfDay(zoneId).toInstant().toEpochMilli(),
+                        dayKey = date.toString(),
+                        label = date.format(getSectionDateFormatter()),
+                        income = income,
+                        expense = expense,
+                        transactions = bucket
+                    )
+                }
+            }
+
+            LedgerDashboard(
+                totalIncome = totalIncome,
+                totalExpense = totalExpense,
+                chartPoints = chartPoints,
+                daySummaries = daySummaries
+            )
+        }
+    }
+
+    private fun buildYearDashboard(windowDays: Int, year: Int): LedgerDashboard {
         val zoneId = ZoneId.systemDefault()
         val allTransactions = loadTransactionsInternal()
-        val monthTransactions = allTransactions.filter {
-            YearMonth.from(java.time.Instant.ofEpochMilli(it.timestampMillis).atZone(zoneId)) == month
+        val yearTransactions = allTransactions.filter {
+            java.time.Instant.ofEpochMilli(it.timestampMillis).atZone(zoneId).year == year
         }
-        val monthStart = month.atDay(1)
-        val monthEnd = month.atEndOfMonth()
+        val yearStart = LocalDate.of(year, 1, 1)
+        val yearEnd = LocalDate.of(year, 12, 31)
         val today = LocalDate.now(zoneId)
         val safeWindowDays = windowDays.coerceAtLeast(1)
         val chartEnd = today
@@ -71,8 +194,8 @@ class LedgerRepository(context: Context) {
         val chartDayCount = java.time.temporal.ChronoUnit.DAYS.between(chartStart, chartEnd).toInt() + 1
         val chartDaySequence = (0 until chartDayCount).map { chartStart.plusDays(it.toLong()) }
 
-        val summaryDayCount = java.time.temporal.ChronoUnit.DAYS.between(monthStart, monthEnd).toInt() + 1
-        val summaryDaySequence = (0 until summaryDayCount).map { monthStart.plusDays(it.toLong()) }
+        val summaryDayCount = java.time.temporal.ChronoUnit.DAYS.between(yearStart, yearEnd).toInt() + 1
+        val summaryDaySequence = (0 until summaryDayCount).map { yearStart.plusDays(it.toLong()) }
 
         val chartPoints = chartDaySequence.map { date ->
             val bucket = allTransactions.filter { sameDay(it.timestampMillis, date, zoneId) }
@@ -81,11 +204,11 @@ class LedgerRepository(context: Context) {
             ChartPoint(LedgerFormatters.shortLabel(date), income, expense)
         }
 
-        val totalIncome = monthTransactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
-        val totalExpense = monthTransactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+        val totalIncome = yearTransactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
+        val totalExpense = yearTransactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
 
         val daySummaries = summaryDaySequence.reversed().mapNotNull { date ->
-            val bucket = monthTransactions
+            val bucket = yearTransactions
                 .filter { sameDay(it.timestampMillis, date, zoneId) }
                 .sortedByDescending { it.timestampMillis }
             if (bucket.isEmpty()) {
@@ -96,7 +219,7 @@ class LedgerRepository(context: Context) {
                 DaySummary(
                     dateMillis = date.atStartOfDay(zoneId).toInstant().toEpochMilli(),
                     dayKey = date.toString(),
-                    label = date.format(getSectionDateFormatter()),
+                    label = date.format(getSectionDateFormatterWithYear()),
                     income = income,
                     expense = expense,
                     transactions = bucket
@@ -104,7 +227,67 @@ class LedgerRepository(context: Context) {
             }
         }
 
-        LedgerDashboard(
+        return LedgerDashboard(
+            totalIncome = totalIncome,
+            totalExpense = totalExpense,
+            chartPoints = chartPoints,
+            daySummaries = daySummaries
+        )
+    }
+
+    private fun buildAllTimeDashboard(windowDays: Int): LedgerDashboard {
+        val zoneId = ZoneId.systemDefault()
+        val allTransactions = loadTransactionsInternal()
+        if (allTransactions.isEmpty()) {
+            return LedgerDashboard(
+                totalIncome = 0.0,
+                totalExpense = 0.0,
+                chartPoints = emptyList(),
+                daySummaries = emptyList()
+            )
+        }
+        val groupedByDay = allTransactions.groupBy {
+            java.time.Instant.ofEpochMilli(it.timestampMillis).atZone(zoneId).toLocalDate()
+        }
+        val firstDate = groupedByDay.keys.minOrNull() ?: LocalDate.now(zoneId)
+        val lastDate = groupedByDay.keys.maxOrNull() ?: firstDate
+        val totalDays = java.time.temporal.ChronoUnit.DAYS.between(firstDate, lastDate).toInt() + 1
+        val daySequence = (0 until totalDays).map { firstDate.plusDays(it.toLong()) }
+
+        val safeWindowDays = windowDays.coerceAtLeast(1)
+        val chartEnd = LocalDate.now(zoneId)
+        val chartStart = chartEnd.minusDays((safeWindowDays - 1).toLong())
+        val chartDayCount = java.time.temporal.ChronoUnit.DAYS.between(chartStart, chartEnd).toInt() + 1
+        val chartDaySequence = (0 until chartDayCount).map { chartStart.plusDays(it.toLong()) }
+
+        val chartPoints = chartDaySequence.map { date ->
+            val bucket = groupedByDay[date].orEmpty()
+            val income = bucket.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
+            val expense = bucket.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+            ChartPoint(LedgerFormatters.shortLabel(date), income, expense)
+        }
+
+        val daySummaries = daySequence.reversed().mapNotNull { date ->
+            val bucket = groupedByDay[date].orEmpty().sortedByDescending { it.timestampMillis }
+            if (bucket.isEmpty()) {
+                null
+            } else {
+                val income = bucket.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
+                val expense = bucket.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+                DaySummary(
+                    dateMillis = date.atStartOfDay(zoneId).toInstant().toEpochMilli(),
+                    dayKey = date.toString(),
+                    label = date.format(getSectionDateFormatterWithYear()),
+                    income = income,
+                    expense = expense,
+                    transactions = bucket
+                )
+            }
+        }
+
+        val totalIncome = allTransactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
+        val totalExpense = allTransactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+        return LedgerDashboard(
             totalIncome = totalIncome,
             totalExpense = totalExpense,
             chartPoints = chartPoints,
@@ -113,59 +296,131 @@ class LedgerRepository(context: Context) {
     }
 
     fun getInsights(): LedgerInsights = synchronized(lock) {
-        val transactions = loadTransactionsInternal()
-        val zoneId = ZoneId.systemDefault()
-        val currentMonth = YearMonth.now(zoneId)
-        val previousMonth = currentMonth.minusMonths(1)
-        val monthFormatter = DateTimeFormatter.ofPattern("MMM d", Locale.getDefault())
+        PerfTrace.measure("LedgerRepository.getInsights") {
+            val transactions = loadTransactionsInternal()
+            val zoneId = ZoneId.systemDefault()
+            val currentMonth = YearMonth.now(zoneId)
+            val previousMonth = currentMonth.minusMonths(1)
+            val monthFormatter = DateTimeFormatter.ofPattern("MMM d", Locale.getDefault())
 
-        val currentMonthTransactions = transactions.filter {
-            YearMonth.from(java.time.Instant.ofEpochMilli(it.timestampMillis).atZone(zoneId)) == currentMonth
+            val currentMonthTransactions = transactions.filter {
+                YearMonth.from(java.time.Instant.ofEpochMilli(it.timestampMillis).atZone(zoneId)) == currentMonth
+            }
+            val previousMonthTransactions = transactions.filter {
+                YearMonth.from(java.time.Instant.ofEpochMilli(it.timestampMillis).atZone(zoneId)) == previousMonth
+            }
+
+            val totalIncome = currentMonthTransactions
+                .filter { it.type == TransactionType.INCOME }
+                .sumOf { it.amount }
+            val totalExpense = currentMonthTransactions
+                .filter { it.type == TransactionType.EXPENSE }
+                .sumOf { it.amount }
+            val previousMonthExpense = previousMonthTransactions
+                .filter { it.type == TransactionType.EXPENSE }
+                .sumOf { it.amount }
+            val expenseDelta = when {
+                previousMonthExpense <= 0.0 && totalExpense <= 0.0 -> 0.0
+                previousMonthExpense <= 0.0 -> 100.0
+                else -> ((totalExpense - previousMonthExpense) / previousMonthExpense) * 100.0
+            }
+
+            val weeklyPoints = buildList {
+                val firstDay = currentMonth.atDay(1)
+                val lastDay = currentMonth.atEndOfMonth()
+                var cursor = firstDay
+                var weekIndex = 1
+                while (!cursor.isAfter(lastDay)) {
+                    val weekEnd = minOf(cursor.plusDays(6), lastDay)
+                    val bucket = currentMonthTransactions.filter { tx ->
+                        val txDate = java.time.Instant.ofEpochMilli(tx.timestampMillis).atZone(zoneId).toLocalDate()
+                        !txDate.isBefore(cursor) && !txDate.isAfter(weekEnd)
+                    }
+                    add(
+                        InsightsWeekPoint(
+                            label = "WK $weekIndex",
+                            income = bucket.filter { it.type == TransactionType.INCOME }.sumOf { it.amount },
+                            expense = bucket.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+                        )
+                    )
+                    cursor = weekEnd.plusDays(1)
+                    weekIndex++
+                }
+            }
+
+            val monthExpenseTotal = totalExpense.coerceAtLeast(0.0)
+            val expenseCategories = currentMonthTransactions
+                .asSequence()
+                .filter { it.type == TransactionType.EXPENSE }
+                .groupBy { it.categoryId }
+                .mapNotNull { (categoryId, items) ->
+                    val category = categories.firstOrNull { it.id == categoryId } ?: return@mapNotNull null
+                    val amount = items.sumOf { it.amount }
+                    InsightsCategoryStat(
+                        category = category,
+                        amount = amount,
+                        ratio = if (monthExpenseTotal > 0.0) amount / monthExpenseTotal else 0.0
+                    )
+                }
+                .sortedByDescending { it.amount }
+                .toList()
+
+            LedgerInsights(
+                rangeLabel = "${currentMonth.atDay(1).format(monthFormatter)} - ${currentMonth.atEndOfMonth().format(monthFormatter)}, ${currentMonth.year}",
+                totalIncome = totalIncome,
+                totalExpense = totalExpense,
+                remainingBalance = totalIncome - totalExpense,
+                monthOverMonthExpenseDelta = expenseDelta,
+                weeklyPoints = weeklyPoints,
+                expenseCategories = expenseCategories
+            )
         }
-        val previousMonthTransactions = transactions.filter {
-            YearMonth.from(java.time.Instant.ofEpochMilli(it.timestampMillis).atZone(zoneId)) == previousMonth
+    }
+
+    private fun buildProjectInsights(
+        transactions: List<LedgerTransaction>,
+        zoneId: ZoneId
+    ): LedgerInsights {
+        if (transactions.isEmpty()) {
+            return LedgerInsights(
+                rangeLabel = "",
+                totalIncome = 0.0,
+                totalExpense = 0.0,
+                remainingBalance = 0.0,
+                monthOverMonthExpenseDelta = 0.0,
+                weeklyPoints = emptyList(),
+                expenseCategories = emptyList()
+            )
         }
 
-        val totalIncome = currentMonthTransactions
+        val dates = transactions.map {
+            java.time.Instant.ofEpochMilli(it.timestampMillis).atZone(zoneId).toLocalDate()
+        }
+        val firstDate = dates.minOrNull() ?: LocalDate.now(zoneId)
+        val lastDate = dates.maxOrNull() ?: firstDate
+        val rangeFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.getDefault())
+
+        val totalIncome = transactions
             .filter { it.type == TransactionType.INCOME }
             .sumOf { it.amount }
-        val totalExpense = currentMonthTransactions
+        val totalExpense = transactions
             .filter { it.type == TransactionType.EXPENSE }
             .sumOf { it.amount }
-        val previousMonthExpense = previousMonthTransactions
-            .filter { it.type == TransactionType.EXPENSE }
-            .sumOf { it.amount }
-        val expenseDelta = when {
-            previousMonthExpense <= 0.0 && totalExpense <= 0.0 -> 0.0
-            previousMonthExpense <= 0.0 -> 100.0
-            else -> ((totalExpense - previousMonthExpense) / previousMonthExpense) * 100.0
-        }
 
-        val weeklyPoints = buildList {
-            val firstDay = currentMonth.atDay(1)
-            val lastDay = currentMonth.atEndOfMonth()
-            var cursor = firstDay
-            var weekIndex = 1
-            while (!cursor.isAfter(lastDay)) {
-                val weekEnd = minOf(cursor.plusDays(6), lastDay)
-                val bucket = currentMonthTransactions.filter { tx ->
-                    val txDate = java.time.Instant.ofEpochMilli(tx.timestampMillis).atZone(zoneId).toLocalDate()
-                    !txDate.isBefore(cursor) && !txDate.isAfter(weekEnd)
-                }
-                add(
-                    InsightsWeekPoint(
-                        label = "WK $weekIndex",
-                        income = bucket.filter { it.type == TransactionType.INCOME }.sumOf { it.amount },
-                        expense = bucket.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
-                    )
-                )
-                cursor = weekEnd.plusDays(1)
-                weekIndex++
+        val dayCount = java.time.temporal.ChronoUnit.DAYS.between(firstDate, lastDate).toInt() + 1
+        val dailyPoints = (0 until dayCount).map { offset ->
+            val date = firstDate.plusDays(offset.toLong())
+            val bucket = transactions.filter { tx ->
+                java.time.Instant.ofEpochMilli(tx.timestampMillis).atZone(zoneId).toLocalDate() == date
             }
+            InsightsWeekPoint(
+                label = LedgerFormatters.shortLabel(date),
+                income = bucket.filter { it.type == TransactionType.INCOME }.sumOf { it.amount },
+                expense = bucket.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+            )
         }
 
-        val monthExpenseTotal = totalExpense.coerceAtLeast(0.0)
-        val expenseCategories = currentMonthTransactions
+        val expenseCategories = transactions
             .asSequence()
             .filter { it.type == TransactionType.EXPENSE }
             .groupBy { it.categoryId }
@@ -175,19 +430,19 @@ class LedgerRepository(context: Context) {
                 InsightsCategoryStat(
                     category = category,
                     amount = amount,
-                    ratio = if (monthExpenseTotal > 0.0) amount / monthExpenseTotal else 0.0
+                    ratio = if (totalExpense > 0.0) amount / totalExpense else 0.0
                 )
             }
             .sortedByDescending { it.amount }
             .toList()
 
-        LedgerInsights(
-            rangeLabel = "${currentMonth.atDay(1).format(monthFormatter)} - ${currentMonth.atEndOfMonth().format(monthFormatter)}, ${currentMonth.year}",
+        return LedgerInsights(
+            rangeLabel = "${firstDate.format(rangeFormatter)} - ${lastDate.format(rangeFormatter)}",
             totalIncome = totalIncome,
             totalExpense = totalExpense,
             remainingBalance = totalIncome - totalExpense,
-            monthOverMonthExpenseDelta = expenseDelta,
-            weeklyPoints = weeklyPoints,
+            monthOverMonthExpenseDelta = 0.0,
+            weeklyPoints = dailyPoints,
             expenseCategories = expenseCategories
         )
     }
@@ -218,11 +473,20 @@ class LedgerRepository(context: Context) {
     fun saveTransaction(draft: TransactionDraft): Long = synchronized(lock) {
         val transactions = loadTransactionsInternal().toMutableList()
         val parsedAmount = draft.amountText.toDoubleOrNull() ?: 0.0
+        val existing = draft.transactionId?.let { id ->
+            transactions.firstOrNull { it.id == id }
+        }
+        val preservedRefundedAmount = if (draft.type == TransactionType.EXPENSE) {
+            existing?.refundedAmount ?: 0.0
+        } else {
+            0.0
+        }
         val tx = LedgerTransaction(
             id = draft.transactionId ?: nextId.getAndIncrement(),
             type = draft.type,
-            categoryId = draft.categoryId,
+            categoryId = normalizeCategoryId(draft.categoryId),
             amount = parsedAmount,
+            refundedAmount = preservedRefundedAmount,
             note = draft.note.trim(),
             timestampMillis = draft.dateMillis,
             currency = draft.currency
@@ -237,6 +501,34 @@ class LedgerRepository(context: Context) {
         tx.id
     }
 
+    fun refundTransaction(id: Long, refundAmount: Double) = synchronized(lock) {
+        require(refundAmount.isFinite() && refundAmount > 0.0) { "Refund amount must be a positive number." }
+        require(BigDecimal.valueOf(refundAmount).scale() <= 2) { "Refund amount can have up to 2 decimal places." }
+
+        val transactions = loadTransactionsInternal().toMutableList()
+        val index = transactions.indexOfFirst { it.id == id }
+        if (index < 0) {
+            return@synchronized
+        }
+        val current = transactions[index]
+        if (current.type != TransactionType.EXPENSE) {
+            throw IllegalArgumentException("Only expense transactions can be refunded.")
+        }
+
+        val originalAmount = current.originalExpenseAmount()
+        val maxRefundable = originalAmount - current.refundedAmount
+        if (refundAmount > maxRefundable + 1e-9) {
+            throw IllegalArgumentException("Refund amount cannot exceed original expense amount.")
+        }
+
+        val updated = current.copy(
+            amount = (current.amount - refundAmount).coerceAtLeast(0.0),
+            refundedAmount = current.refundedAmount + refundAmount
+        )
+        transactions[index] = updated
+        persist(transactions)
+    }
+
     fun deleteTransaction(id: Long) = synchronized(lock) {
         val transactions = loadTransactionsInternal().toMutableList()
         transactions.removeAll { it.id == id }
@@ -247,37 +539,91 @@ class LedgerRepository(context: Context) {
         return categories.filter { it.type == type }
     }
 
-    fun getMonthlyBudget(month: YearMonth): Double? {
-        return explicitMonthlyBudget(month)
-            ?: explicitMonthlyBudget(month.minusMonths(1))
+    fun isCurrentLedgerProject(): Boolean = synchronized(lock) {
+        getCurrentLedger().type == LedgerBookType.PROJECT
     }
 
-    fun setMonthlyBudget(month: YearMonth, value: Double) {
+    fun getMonthlyBudget(month: YearMonth): Double? = synchronized(lock) {
+        val ledgerId = currentLedgerId
+        explicitMonthlyBudget(month, ledgerId)
+            ?: explicitMonthlyBudget(month.minusMonths(1), ledgerId)
+    }
+
+    fun setMonthlyBudget(month: YearMonth, value: Double) = synchronized(lock) {
         require(value.isFinite() && value > 0.0) { "Monthly budget must be a positive number." }
         require(BigDecimal.valueOf(value).scale() <= 2) { "Monthly budget can have up to 2 decimal places." }
         prefs.edit()
-            .putString(budgetKey(month), value.toString())
+            .putString(budgetKey(month, currentLedgerId), value.toString())
             .remove(KEY_MONTHLY_BUDGET_LEGACY)
             .apply()
     }
 
+    fun getYearlyBudget(year: Int): Double? = synchronized(lock) {
+        prefs.getString(yearlyBudgetKey(year, currentLedgerId), null)
+            ?.toDoubleOrNull()
+            ?.takeIf { it > 0.0 }
+    }
+
+    fun setYearlyBudget(year: Int, value: Double) = synchronized(lock) {
+        require(value.isFinite() && value > 0.0) { "Yearly budget must be a positive number." }
+        require(BigDecimal.valueOf(value).scale() <= 2) { "Yearly budget can have up to 2 decimal places." }
+        prefs.edit()
+            .putString(yearlyBudgetKey(year, currentLedgerId), value.toString())
+            .apply()
+    }
+
+    fun getTotalBudget(): Double? = synchronized(lock) {
+        prefs.getString(projectBudgetKey(currentLedgerId), null)
+            ?.toDoubleOrNull()
+            ?.takeIf { it > 0.0 }
+    }
+
+    fun setTotalBudget(value: Double) = synchronized(lock) {
+        require(value.isFinite() && value > 0.0) { "Project budget must be a positive number." }
+        require(BigDecimal.valueOf(value).scale() <= 2) { "Project budget can have up to 2 decimal places." }
+        prefs.edit()
+            .putString(projectBudgetKey(currentLedgerId), value.toString())
+            .apply()
+    }
+
     fun getMonthlyExpense(month: YearMonth): Double = synchronized(lock) {
+        PerfTrace.measure("LedgerRepository.getMonthlyExpense(month=$month)") {
+            loadTransactionsInternal()
+                .filter { tx ->
+                    YearMonth.from(java.time.Instant.ofEpochMilli(tx.timestampMillis).atZone(ZoneId.systemDefault())) == month &&
+                        tx.type == TransactionType.EXPENSE
+                }
+                .sumOf { it.amount }
+        }
+    }
+
+    fun getTotalExpense(): Double = synchronized(lock) {
         loadTransactionsInternal()
-            .filter { tx ->
-                YearMonth.from(java.time.Instant.ofEpochMilli(tx.timestampMillis).atZone(ZoneId.systemDefault())) == month &&
-                    tx.type == TransactionType.EXPENSE
-            }
+            .filter { it.type == TransactionType.EXPENSE }
             .sumOf { it.amount }
     }
 
-    private fun ensureSeedData() {
-        synchronized(lock) {
-            val existing = loadTransactionsInternal()
+    private fun syncBuiltInDataAndNextId() {
+        PerfTrace.measure("LedgerRepository.syncBuiltInDataAndNextId(current=$currentLedgerId)") {
+            ensureSeedDataForSampleLedger()
+            syncNextTransactionId()
+        }
+    }
+
+    private fun syncNextTransactionId() {
+        nextId.set((loadTransactionsInternal().maxOfOrNull { it.id } ?: 0L) + 1L)
+    }
+
+    private fun ensureSeedDataForSampleLedger() {
+        PerfTrace.measure("LedgerRepository.ensureSeedDataForSampleLedger") {
+            if (ledgers.none { it.id == SAMPLE_LEDGER_ID }) {
+                return@measure
+            }
+            val existing = loadTransactionsInternal(SAMPLE_LEDGER_ID)
             val seed = buildSeedTransactions()
             if (existing.isEmpty()) {
-                nextId.set((seed.maxOfOrNull { it.id } ?: 0L) + 1L)
-                persist(seed)
-                return
+                persist(seed, SAMPLE_LEDGER_ID)
+                return@measure
             }
 
             val zoneId = ZoneId.systemDefault()
@@ -310,40 +656,59 @@ class LedgerRepository(context: Context) {
             appendMonthIfMissing(YearMonth.of(2025, 4))
 
             if (merged.size != existing.size) {
-                persist(merged)
+                persist(merged, SAMPLE_LEDGER_ID)
             }
-            nextId.set(nextGeneratedId)
         }
     }
 
-    private fun loadTransactionsInternal(): List<LedgerTransaction> {
-        if (!ledgerFile.exists()) {
-            return emptyList()
-        }
-        return try {
-            val raw = ledgerFile.readText()
-            if (raw.isBlank()) {
-                emptyList()
-            } else {
-                val array = JSONArray(raw)
-                buildList {
-                    for (i in 0 until array.length()) {
-                        add(array.getJSONObject(i).toTransaction())
+    private fun loadTransactionsInternal(ledgerId: String = currentLedgerId): List<LedgerTransaction> {
+        return PerfTrace.measure("LedgerRepository.loadTransactionsInternal(ledger=$ledgerId)") {
+            transactionsCache[ledgerId]?.let { cached ->
+                return@measure cached
+            }
+            val ledgerFile = ledgerFileFor(ledgerId)
+            if (!ledgerFile.exists()) {
+                return@measure emptyList<LedgerTransaction>().also {
+                    transactionsCache[ledgerId] = it
+                }
+            }
+            try {
+                val raw = ledgerFile.readText()
+                if (raw.isBlank()) {
+                    emptyList<LedgerTransaction>().also {
+                        transactionsCache[ledgerId] = it
                     }
-                }.sortedByDescending { it.timestampMillis }
+                } else {
+                    val array = JSONArray(raw)
+                    buildList {
+                        for (i in 0 until array.length()) {
+                            add(array.getJSONObject(i).toTransaction())
+                        }
+                    }.sortedByDescending { it.timestampMillis }
+                        .also { parsed ->
+                            transactionsCache[ledgerId] = parsed
+                        }
+                }
+            } catch (throwable: Throwable) {
+                Log.w(TAG, "Failed to load transactions", throwable)
+                emptyList<LedgerTransaction>().also {
+                    transactionsCache[ledgerId] = it
+                }
             }
-        } catch (throwable: Throwable) {
-            Log.w(TAG, "Failed to load transactions", throwable)
-            emptyList()
         }
     }
 
-    private fun persist(transactions: List<LedgerTransaction>) {
-        val array = JSONArray()
-        transactions.sortedByDescending { it.timestampMillis }.forEach { transaction ->
-            array.put(transaction.toJson())
+    private fun persist(transactions: List<LedgerTransaction>, ledgerId: String = currentLedgerId) {
+        PerfTrace.measure("LedgerRepository.persist(ledger=$ledgerId, count=${transactions.size})") {
+            val ledgerFile = ledgerFileFor(ledgerId)
+            val sortedTransactions = transactions.sortedByDescending { it.timestampMillis }
+            val array = JSONArray()
+            sortedTransactions.forEach { transaction ->
+                array.put(transaction.toJson())
+            }
+            ledgerFile.writeText(array.toString())
+            transactionsCache[ledgerId] = sortedTransactions
         }
-        ledgerFile.writeText(array.toString())
     }
 
     private fun buildSeedTransactions(): List<LedgerTransaction> {
@@ -424,6 +789,7 @@ class LedgerRepository(context: Context) {
         put("type", type.name)
         put("categoryId", categoryId)
         put("amount", amount)
+        put("refundedAmount", refundedAmount)
         put("currency", currency.name)
         put("note", note)
         put("timestampMillis", timestampMillis)
@@ -433,8 +799,9 @@ class LedgerRepository(context: Context) {
         return LedgerTransaction(
             id = getLong("id"),
             type = TransactionType.valueOf(getString("type")),
-            categoryId = getString("categoryId"),
+            categoryId = normalizeCategoryId(getString("categoryId")),
             amount = getDouble("amount"),
+            refundedAmount = optDouble("refundedAmount", 0.0),
             note = optString("note", ""),
             timestampMillis = getLong("timestampMillis"),
             currency = optString("currency", CurrencyCode.CNY.name)
@@ -449,23 +816,160 @@ class LedgerRepository(context: Context) {
         } ?: CurrencyCode.CNY
     }
 
+    private fun String?.toLedgerBookTypeOrDefault(): LedgerBookType {
+        val raw = this?.trim().orEmpty()
+        return LedgerBookType.values().firstOrNull {
+            it.name.equals(raw, ignoreCase = true)
+        } ?: LedgerBookType.NORMAL
+    }
+
+    private fun normalizeCategoryId(categoryId: String): String {
+        return when (categoryId) {
+            "expense_kids" -> "expense_other"
+            else -> categoryId
+        }
+    }
+
     private fun Double.toPlainString(): String {
         val text = toString()
         return if (text.endsWith(".0")) text.substring(0, text.length - 2) else text
     }
 
-    private fun budgetKey(month: YearMonth): String = "$KEY_MONTHLY_BUDGET_PREFIX$month"
+    private fun loadLedgerState() {
+        val parsedLedgers = runCatching {
+            val raw = prefs.getString(KEY_LEDGERS, null).orEmpty()
+            if (raw.isBlank()) {
+                emptyList()
+            } else {
+                val array = JSONArray(raw)
+                buildList {
+                    for (i in 0 until array.length()) {
+                        val item = array.optJSONObject(i) ?: continue
+                        val id = item.optString("id").trim()
+                        val name = item.optString("name").trim()
+                        val type = item.optString("type")
+                            .toLedgerBookTypeOrDefault()
+                        if (id.isNotEmpty() && name.isNotEmpty()) {
+                            add(LedgerBook(id = id, name = name, type = type))
+                        }
+                    }
+                }
+            }
+        }.getOrDefault(emptyList())
 
-    private fun explicitMonthlyBudget(month: YearMonth): Double? {
-        return prefs.getString(budgetKey(month), null)?.toDoubleOrNull()?.takeIf { it > 0.0 }
-            ?: legacyMonthlyBudget(month)
+        val dedupedLedgers = linkedMapOf<String, LedgerBook>()
+        parsedLedgers.forEach { ledger ->
+            if (!dedupedLedgers.containsKey(ledger.id)) {
+                dedupedLedgers[ledger.id] = ledger
+            }
+        }
+        if (dedupedLedgers.isEmpty()) {
+            dedupedLedgers[DEFAULT_LEDGER_ID] = LedgerBook(
+                id = DEFAULT_LEDGER_ID,
+                name = DEFAULT_LEDGER_NAME,
+                type = LedgerBookType.NORMAL
+            )
+            dedupedLedgers[SAMPLE_LEDGER_ID] = LedgerBook(
+                id = SAMPLE_LEDGER_ID,
+                name = SAMPLE_LEDGER_NAME,
+                type = LedgerBookType.NORMAL
+            )
+        }
+
+        val savedCurrentId = prefs.getString(KEY_CURRENT_LEDGER_ID, DEFAULT_LEDGER_ID).orEmpty()
+        val resolvedCurrentId = if (dedupedLedgers.containsKey(savedCurrentId)) {
+            savedCurrentId
+        } else {
+            if (dedupedLedgers.containsKey(DEFAULT_LEDGER_ID)) {
+                DEFAULT_LEDGER_ID
+            } else {
+                dedupedLedgers.keys.first()
+            }
+        }
+
+        ledgers = dedupedLedgers.values.toMutableList()
+        currentLedgerId = resolvedCurrentId
+        persistLedgerState()
     }
 
-    private fun legacyMonthlyBudget(month: YearMonth): Double? {
+    private fun persistLedgerState() {
+        val array = JSONArray().apply {
+            ledgers.forEach { ledger ->
+                put(
+                    JSONObject().apply {
+                        put("id", ledger.id)
+                        put("name", ledger.name)
+                        put("type", ledger.type.name)
+                    }
+                )
+            }
+        }
+        prefs.edit()
+            .putString(KEY_LEDGERS, array.toString())
+            .putString(KEY_CURRENT_LEDGER_ID, currentLedgerId)
+            .apply()
+    }
+
+    private fun ledgerFileFor(ledgerId: String): File {
+        return if (ledgerId == DEFAULT_LEDGER_ID) {
+            defaultLedgerFile
+        } else {
+            File(appContext.filesDir, "$LEDGER_FILE_PREFIX$ledgerId$LEDGER_FILE_SUFFIX")
+        }
+    }
+
+    private fun deleteLedgerData(ledgerId: String) {
+        ledgerFileFor(ledgerId).takeIf { it.exists() }?.delete()
+        transactionsCache.remove(ledgerId)
+        val targetPrefix = "$KEY_MONTHLY_BUDGET_PREFIX${ledgerId}_"
+        val editor = prefs.edit()
+        prefs.all.keys
+            .filter { it.startsWith(targetPrefix) }
+            .forEach { key -> editor.remove(key) }
+        val yearlyTargetPrefix = "$KEY_YEARLY_BUDGET_PREFIX${ledgerId}_"
+        prefs.all.keys
+            .filter { it.startsWith(yearlyTargetPrefix) }
+            .forEach { key -> editor.remove(key) }
+        editor.remove(projectBudgetKey(ledgerId))
+        if (ledgerId == DEFAULT_LEDGER_ID) {
+            editor.remove(KEY_MONTHLY_BUDGET_LEGACY)
+            prefs.all.keys
+                .filter(::isLegacyMonthBudgetKey)
+                .forEach { legacyKey -> editor.remove(legacyKey) }
+        }
+        editor.apply()
+    }
+
+    private fun budgetKey(month: YearMonth, ledgerId: String): String =
+        "$KEY_MONTHLY_BUDGET_PREFIX${ledgerId}_$month"
+
+    private fun yearlyBudgetKey(year: Int, ledgerId: String): String =
+        "$KEY_YEARLY_BUDGET_PREFIX${ledgerId}_$year"
+
+    private fun projectBudgetKey(ledgerId: String): String =
+        "$KEY_PROJECT_BUDGET_PREFIX$ledgerId"
+
+    private fun explicitMonthlyBudget(month: YearMonth, ledgerId: String): Double? {
+        return prefs.getString(budgetKey(month, ledgerId), null)?.toDoubleOrNull()?.takeIf { it > 0.0 }
+            ?: legacyMonthlyBudget(month, ledgerId)
+    }
+
+    private fun legacyMonthlyBudget(month: YearMonth, ledgerId: String): Double? {
+        if (ledgerId != DEFAULT_LEDGER_ID) {
+            return null
+        }
+        prefs.getString(legacyBudgetKey(month), null)?.toDoubleOrNull()?.takeIf { it > 0.0 }?.let { return it }
         if (month != YearMonth.now()) {
             return null
         }
         return prefs.getString(KEY_MONTHLY_BUDGET_LEGACY, null)?.toDoubleOrNull()?.takeIf { it > 0.0 }
+    }
+
+    private fun legacyBudgetKey(month: YearMonth): String = "$KEY_MONTHLY_BUDGET_PREFIX$month"
+
+    private fun isLegacyMonthBudgetKey(key: String): Boolean {
+        return key.startsWith(KEY_MONTHLY_BUDGET_PREFIX) &&
+            key.removePrefix(KEY_MONTHLY_BUDGET_PREFIX).matches(Regex("\\d{4}-\\d{2}"))
     }
 
     private fun sameDay(millis: Long, date: LocalDate, zoneId: ZoneId): Boolean {
@@ -475,10 +979,20 @@ class LedgerRepository(context: Context) {
 
     companion object {
         private const val FILE_NAME = "ledger_transactions.json"
+        private const val LEDGER_FILE_PREFIX = "ledger_transactions_"
+        private const val LEDGER_FILE_SUFFIX = ".json"
+        private const val DEFAULT_LEDGER_ID = "default"
+        private const val DEFAULT_LEDGER_NAME = "Default"
+        private const val SAMPLE_LEDGER_ID = "sample"
+        private const val SAMPLE_LEDGER_NAME = "Sample"
         private const val TAG = "LedgerRepository"
         private const val PREFS_NAME = "ledger_settings"
+        private const val KEY_LEDGERS = "ledgers"
+        private const val KEY_CURRENT_LEDGER_ID = "current_ledger_id"
         private const val KEY_MONTHLY_BUDGET_PREFIX = "monthly_budget_"
         private const val KEY_MONTHLY_BUDGET_LEGACY = "monthly_budget"
+        private const val KEY_YEARLY_BUDGET_PREFIX = "yearly_budget_"
+        private const val KEY_PROJECT_BUDGET_PREFIX = "project_budget_"
     }
 }
 

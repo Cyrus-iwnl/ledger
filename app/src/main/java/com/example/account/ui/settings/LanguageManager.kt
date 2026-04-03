@@ -3,6 +3,7 @@ package com.example.account.ui.settings
 import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
+import com.example.account.PerfTrace
 import java.util.Locale
 
 enum class AppLanguage(val languageTag: String) {
@@ -22,9 +23,11 @@ object LanguageManager {
     private const val KEY_LANGUAGE = "language"
 
     fun applySavedLanguage(context: Context) {
-        val savedLanguage = prefs(context).getString(KEY_LANGUAGE, null)
-        val language = AppLanguage.fromLanguageTag(savedLanguage) ?: return
-        applyLanguage(language)
+        PerfTrace.measure("LanguageManager.applySavedLanguage") {
+            val savedLanguage = prefs(context).getString(KEY_LANGUAGE, null)
+            val language = AppLanguage.fromLanguageTag(savedLanguage) ?: return@measure
+            applyLanguage(language)
+        }
     }
 
     fun currentLanguage(context: Context): AppLanguage {
@@ -45,11 +48,13 @@ object LanguageManager {
     }
 
     private fun applyLanguage(language: AppLanguage) {
-        val targetLocales = LocaleListCompat.forLanguageTags(language.languageTag)
-        if (AppCompatDelegate.getApplicationLocales().toLanguageTags() == targetLocales.toLanguageTags()) {
-            return
+        PerfTrace.measure("LanguageManager.applyLanguage(${language.languageTag})") {
+            val targetLocales = LocaleListCompat.forLanguageTags(language.languageTag)
+            if (AppCompatDelegate.getApplicationLocales().toLanguageTags() == targetLocales.toLanguageTags()) {
+                return@measure
+            }
+            AppCompatDelegate.setApplicationLocales(targetLocales)
         }
-        AppCompatDelegate.setApplicationLocales(targetLocales)
     }
 
     private fun inferLanguage(locale: Locale): AppLanguage {

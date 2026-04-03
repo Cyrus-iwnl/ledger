@@ -9,8 +9,10 @@ import com.example.account.databinding.ActivityMainBinding
 import com.example.account.ui.edit.EditTransactionFragment
 import com.example.account.ui.home.HomeFragment
 import com.example.account.ui.insights.InsightsFragment
+import com.example.account.ui.settings.AppStartupPage
 import com.example.account.ui.settings.LanguageManager
 import com.example.account.ui.settings.SettingsFragment
+import com.example.account.ui.settings.StartupPageManager
 
 class MainActivity : AppCompatActivity() {
 
@@ -21,43 +23,82 @@ class MainActivity : AppCompatActivity() {
     private val settingsTag = SettingsFragment::class.java.name
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        LanguageManager.applySavedLanguage(this)
-        super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        PerfTrace.measure("MainActivity.onCreate") {
+            PerfTrace.measure("MainActivity.applySavedLanguage") {
+                LanguageManager.applySavedLanguage(this)
+            }
+            PerfTrace.measure("MainActivity.super.onCreate") {
+                super.onCreate(savedInstanceState)
+            }
+            PerfTrace.measure("MainActivity.inflate+setContentView") {
+                binding = ActivityMainBinding.inflate(layoutInflater)
+                setContentView(binding.root)
+            }
 
-        if (savedInstanceState == null) {
-            showHome()
-        }
-
-        binding.fabAdd.setOnClickListener {
-            openTransactionEditor()
-        }
-
-        supportFragmentManager.addOnBackStackChangedListener {
-            updateChrome()
-        }
-
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                if (supportFragmentManager.backStackEntryCount > 0) {
-                    supportFragmentManager.popBackStack()
-                } else {
-                    finish()
+            if (savedInstanceState == null) {
+                PerfTrace.measure("MainActivity.initialShowPage") {
+                    showInitialPage()
                 }
             }
-        })
 
-        updateChrome()
+            PerfTrace.measure("MainActivity.bindUiListeners") {
+                binding.fabAdd.setOnClickListener {
+                    openTransactionEditor()
+                }
+
+                supportFragmentManager.addOnBackStackChangedListener {
+                    updateChrome()
+                }
+
+                onBackPressedDispatcher.addCallback(this@MainActivity, object : OnBackPressedCallback(true) {
+                    override fun handleOnBackPressed() {
+                        if (supportFragmentManager.backStackEntryCount > 0) {
+                            supportFragmentManager.popBackStack()
+                        } else {
+                            finish()
+                        }
+                    }
+                })
+            }
+
+            updateChrome()
+        }
     }
 
     fun showHome() {
+        PerfTrace.measure("MainActivity.showHome") {
+            supportFragmentManager.popBackStackImmediate(
+                null,
+                androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
+            )
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, HomeFragment.newInstance(), homeTag)
+                .commitNowAllowingStateLoss()
+            updateChrome()
+        }
+    }
+
+    private fun showInitialPage() {
+        when (StartupPageManager.currentStartupPage(this)) {
+            AppStartupPage.HOME -> showHome()
+            AppStartupPage.TRANSACTION -> showTransactionEditorAsRoot()
+        }
+    }
+
+    private fun showTransactionEditorAsRoot(
+        dateMillis: Long? = null,
+        defaultType: TransactionType = TransactionType.EXPENSE
+    ) {
         supportFragmentManager.popBackStackImmediate(
             null,
             androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
         )
         supportFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, HomeFragment.newInstance(), homeTag)
+            .replace(
+                R.id.fragment_container,
+                EditTransactionFragment.newInstance(transactionId = null, dateMillis = dateMillis, defaultType = defaultType),
+                editorTag
+            )
             .commitNowAllowingStateLoss()
         updateChrome()
     }
@@ -87,7 +128,11 @@ class MainActivity : AppCompatActivity() {
         updateChrome()
     }
 
-    fun openInsights() {
+    fun openInsights(
+        defaultGranularity: String = "MONTH",
+        defaultYear: Int? = null,
+        defaultMonthIndex: Int? = null
+    ) {
         supportFragmentManager.beginTransaction()
             .setCustomAnimations(
                 R.anim.fragment_forward_enter,
@@ -97,7 +142,11 @@ class MainActivity : AppCompatActivity() {
             )
             .replace(
                 R.id.fragment_container,
-                InsightsFragment.newInstance(),
+                InsightsFragment.newInstance(
+                    defaultGranularity = defaultGranularity,
+                    defaultYear = defaultYear,
+                    defaultMonthIndex = defaultMonthIndex
+                ),
                 insightsTag
             )
             .addToBackStack(insightsTag)

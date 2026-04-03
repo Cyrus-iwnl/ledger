@@ -1,11 +1,35 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="settings_title">設定</string>
-    <string name="settings_close">返回</string>
-    <string name="settings_language_title">語言</string>
-    <string name="settings_language_subtitle">選擇應用語言</string>
-    <string name="language_simplified_chinese">简体中文</string>
-    <string name="language_traditional_chinese">繁體中文</string>
+    <string name="settings_title">&#35373;&#23450;</string>
+    <string name="settings_close">&#36820;&#22238;</string>
+    <string name="settings_language_title">&#35486;&#35328;</string>
+    <string name="settings_language_subtitle">&#36984;&#25799;&#25033;&#29992;&#35486;&#35328;</string>
+    <string name="language_simplified_chinese">&#31616;&#20307;&#20013;&#25991;</string>
+    <string name="language_traditional_chinese">&#32321;&#39636;&#20013;&#25991;</string>
     <string name="language_english">English</string>
-    <string name="menu_open_settings">開啟設定</string>
+    <string name="settings_ledger_title">&#24115;&#26412;</string>
+    <string name="settings_ledger_subtitle">&#31649;&#29702;&#24115;&#26412;</string>
+    <string name="settings_ledger_page_title">&#24115;&#26412;</string>
+    <string name="settings_ledger_current_tag">&#30446;&#21069;</string>
+    <string name="settings_ledger_add_title">&#26032;&#22686;&#24115;&#26412;</string>
+    <string name="settings_ledger_delete_title">&#21034;&#38500;&#24115;&#26412;</string>
+    <string name="settings_ledger_name_hint">&#35531;&#36664;&#20837;&#24115;&#26412;&#21517;&#31281;</string>
+    <string name="settings_ledger_name_empty">&#35531;&#36664;&#20837;&#24115;&#26412;&#21517;&#31281;</string>
+    <string name="settings_ledger_delete_last_blocked">&#33267;&#23569;&#20445;&#30041;&#19968;&#20491;&#24115;&#26412;</string>
+    <string name="settings_ledger_delete_confirm_title">&#21034;&#38500;&#24115;&#26412;</string>
+    <string name="settings_ledger_delete_confirm_message">&#26159;&#21542;&#21034;&#38500;&#12300;%1$s&#12301;&#21450;&#20854;&#20840;&#37096;&#36039;&#26009;&#65311;</string>
+    <string name="settings_ledger_delete_step1_title">&#21034;&#38500;&#24115;&#26412;</string>
+    <string name="settings_ledger_delete_step1_subtitle">&#27492;&#25805;&#20316;&#28961;&#27861;&#24489;&#21407;&#12290;</string>
+    <string name="settings_ledger_delete_step1_description">&#20320;&#27491;&#22312;&#21034;&#38500;&#12300;%1$s&#12301;&#65292;&#32380;&#32396;&#24460;&#36996;&#38656;&#26368;&#32066;&#30906;&#35469;&#12290;</string>
+    <string name="settings_ledger_delete_step1_continue">&#32380;&#32396;</string>
+    <string name="settings_ledger_delete_step2_title">&#26368;&#32066;&#30906;&#35469;</string>
+    <string name="settings_ledger_delete_step2_subtitle">&#20840;&#37096;&#36039;&#26009;&#23559;&#34987;&#27704;&#20037;&#21034;&#38500;&#12290;</string>
+    <string name="settings_ledger_delete_step2_description">&#30906;&#35469;&#21034;&#38500;&#12300;%1$s&#12301;&#21450;&#20854;&#24115;&#26412;&#19979;&#30340;&#20840;&#37096;&#35352;&#37636;&#12290;</string>
+    <string name="settings_ledger_delete_step2_confirm">&#31435;&#21363;&#21034;&#38500;</string>
+    <string name="settings_confirm">&#30906;&#23450;</string>
+    <string name="menu_open_settings">&#25171;&#38283;&#35373;&#23450;</string>
+    <string name="settings_startup_page_title">&#36575;&#39636;&#21855;&#21205;&#38913;</string>
+    <string name="settings_startup_page_subtitle">&#21855;&#21205;&#26178;&#38928;&#35373;&#36914;&#20837;</string>
+    <string name="settings_startup_page_option_home">&#20027;&#38913;</string>
+    <string name="settings_startup_page_option_transaction">&#35352;&#24115;&#38913;</string>
 </resources>

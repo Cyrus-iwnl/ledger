@@ -1,4 +1,4 @@
-package com.example.account.data
+﻿package com.example.account.data
 
 import android.content.Context
 import com.example.account.R
@@ -33,6 +33,7 @@ object CategoryLocalizer {
             "expense_comm" -> R.string.category_comm
             "expense_social" -> R.string.category_social
             "expense_kids" -> R.string.category_kids
+            "expense_other" -> R.string.category_other
             "income_salary" -> R.string.category_salary
             "income_bonus" -> R.string.category_bonus
             "income_investment" -> R.string.category_investment
@@ -43,3 +44,4 @@ object CategoryLocalizer {
         return if (resId == null) fallback else context.getString(resId)
     }
 }
+

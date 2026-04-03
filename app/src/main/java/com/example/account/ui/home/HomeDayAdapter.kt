@@ -21,9 +21,6 @@ import com.example.account.data.LedgerFormatters
 import com.example.account.data.LedgerTransaction
 import com.example.account.data.TransactionType
 import com.google.android.material.card.MaterialCardView
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 class HomeDayAdapter(
     private val categories: List<LedgerCategory>,
@@ -60,7 +57,7 @@ class HomeDayAdapter(
             onDayAdd: (Long) -> Unit,
             onTransactionClick: (Long) -> Unit
         ) {
-            dayLabel.text = formatDate(itemView.context, summary.dateMillis)
+            dayLabel.text = summary.label
             val hasIncome = summary.income > 0.0
             val hasExpense = summary.expense > 0.0
             dayAmountsContainer.visibility = if (hasIncome || hasExpense) View.VISIBLE else View.GONE
@@ -122,6 +119,7 @@ class HomeDayAdapter(
             val name = row.findViewById<TextView>(R.id.category_name)
             val note = row.findViewById<TextView>(R.id.note_text)
             val amount = row.findViewById<TextView>(R.id.amount_text)
+            val refunded = row.findViewById<TextView>(R.id.refunded_text)
             val divider = row.findViewById<View>(R.id.row_divider)
             val localizedCategoryName = CategoryLocalizer.displayName(itemView.context, category)
 
@@ -172,28 +170,22 @@ class HomeDayAdapter(
                     itemView.context.getColor(R.color.income_color)
                 }
             )
+            if (transaction.type == TransactionType.EXPENSE && transaction.refundedAmount > 0.0) {
+                refunded.visibility = View.VISIBLE
+                refunded.text = itemView.context.getString(
+                    R.string.transaction_refunded_amount_format,
+                    LedgerFormatters.money(transaction.refundedAmount, transaction.currency)
+                )
+            } else {
+                refunded.visibility = View.GONE
+                refunded.text = ""
+            }
             divider.visibility = if (isLast) View.GONE else View.VISIBLE
 
             rowContent.setOnClickListener { onTransactionClick(transaction.id) }
             rowContent.setOnLongClickListener {
                 onTransactionClick(transaction.id)
                 true
-            }
-        }
-
-        private fun formatDate(context: Context, millis: Long): String {
-            val date = java.time.Instant.ofEpochMilli(millis).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
-            val today = LocalDate.now()
-            val yesterday = today.minusDays(1)
-
-            return when (date) {
-                today -> context.getString(R.string.date_today)
-                yesterday -> context.getString(R.string.date_yesterday)
-                else -> {
-                    val locale = context.resources.configuration.locales[0]
-                    val pattern = "MM.dd EEEE"
-                    date.format(DateTimeFormatter.ofPattern(pattern, locale))
-                }
             }
         }
 
