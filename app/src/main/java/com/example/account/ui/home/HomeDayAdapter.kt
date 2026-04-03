@@ -21,6 +21,8 @@ import com.example.account.data.LedgerFormatters
 import com.example.account.data.LedgerTransaction
 import com.example.account.data.TransactionType
 import com.google.android.material.card.MaterialCardView
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 class HomeDayAdapter(
@@ -58,7 +60,7 @@ class HomeDayAdapter(
             onDayAdd: (Long) -> Unit,
             onTransactionClick: (Long) -> Unit
         ) {
-            dayLabel.text = summary.label.uppercase(Locale.getDefault())
+            dayLabel.text = formatDate(itemView.context, summary.dateMillis)
             val hasIncome = summary.income > 0.0
             val hasExpense = summary.expense > 0.0
             dayAmountsContainer.visibility = if (hasIncome || hasExpense) View.VISIBLE else View.GONE
@@ -176,6 +178,22 @@ class HomeDayAdapter(
             rowContent.setOnLongClickListener {
                 onTransactionClick(transaction.id)
                 true
+            }
+        }
+
+        private fun formatDate(context: Context, millis: Long): String {
+            val date = java.time.Instant.ofEpochMilli(millis).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+            val today = LocalDate.now()
+            val yesterday = today.minusDays(1)
+
+            return when (date) {
+                today -> context.getString(R.string.date_today)
+                yesterday -> context.getString(R.string.date_yesterday)
+                else -> {
+                    val locale = context.resources.configuration.locales[0]
+                    val pattern = "MM.dd EEEE"
+                    date.format(DateTimeFormatter.ofPattern(pattern, locale))
+                }
             }
         }
 

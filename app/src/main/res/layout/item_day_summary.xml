@@ -28,7 +28,7 @@
             android:layout_weight="1"
             android:textAllCaps="true"
             android:textColor="@color/text_hint"
-            android:textSize="11sp"
+            android:textSize="12sp"
             android:textStyle="bold"
             tools:text="03.14 SATURDAY" />
 
@@ -45,7 +45,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="@color/text_hint"
-                android:textSize="10sp"
+                android:textSize="11sp"
                 android:textStyle="bold"
                 tools:text="Income: ¥00.00" />
 
@@ -55,7 +55,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="10dp"
                 android:textColor="@color/text_hint"
-                android:textSize="10sp"
+                android:textSize="11sp"
                 android:textStyle="bold"
                 tools:text="Expense: ¥42.74" />
         </LinearLayout>
@@ -83,7 +83,7 @@
         android:layout_marginTop="8dp"
         android:text="@string/no_transaction_hint"
         android:textColor="@color/text_hint"
-        android:textSize="11sp"
+        android:textSize="12sp"
         android:visibility="gone" />
 </LinearLayout>
 

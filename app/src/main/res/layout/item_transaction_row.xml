@@ -66,7 +66,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="@color/text_primary"
-                android:textSize="13sp"
+                android:textSize="14sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -75,7 +75,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="1dp"
                 android:textColor="@color/text_hint"
-                android:textSize="10sp" />
+                android:textSize="11sp" />
         </LinearLayout>
 
         <TextView
@@ -84,7 +84,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:textColor="@color/expense_color"
-            android:textSize="16sp"
+            android:textSize="17sp"
             android:textStyle="bold" />
     </LinearLayout>
 

@@ -82,7 +82,7 @@ fun insightsNumberLocale(localeTag: String): Locale {
 fun insightsText(localeTag: String): InsightsText {
     return when (localeTag) {
         "zh-CN" -> InsightsText(
-            insightsTitle = "洞察",
+            insightsTitle = "统计",
             month = "月",
             year = "年",
             selectPeriod = "选择周期",
@@ -133,7 +133,7 @@ fun insightsText(localeTag: String): InsightsText {
             weekdays = listOf("一", "二", "三", "四", "五", "六", "日")
         )
         "zh-TW" -> InsightsText(
-            insightsTitle = "洞察",
+            insightsTitle = "統計",
             month = "月",
             year = "年",
             selectPeriod = "選擇週期",

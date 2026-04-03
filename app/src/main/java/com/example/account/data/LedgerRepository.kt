@@ -22,7 +22,7 @@ class LedgerRepository(context: Context) {
     private val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val lock = Any()
     private val nextId = AtomicLong(1L)
-    private val sectionDateFormatter = DateTimeFormatter.ofPattern("MM.dd EEEE", Locale.US)
+    private fun getSectionDateFormatter(): DateTimeFormatter = DateTimeFormatter.ofPattern("MM.dd EEEE", Locale.getDefault())
 
     val categories: List<LedgerCategory> = listOf(
         LedgerCategory("expense_meals", "Meals", TransactionType.EXPENSE, R.drawable.ic_dashboard_restaurant_24, "restaurant", Color.parseColor("#FF9F89")),
@@ -96,7 +96,7 @@ class LedgerRepository(context: Context) {
                 DaySummary(
                     dateMillis = date.atStartOfDay(zoneId).toInstant().toEpochMilli(),
                     dayKey = date.toString(),
-                    label = date.format(sectionDateFormatter),
+                    label = date.format(getSectionDateFormatter()),
                     income = income,
                     expense = expense,
                     transactions = bucket
@@ -117,7 +117,7 @@ class LedgerRepository(context: Context) {
         val zoneId = ZoneId.systemDefault()
         val currentMonth = YearMonth.now(zoneId)
         val previousMonth = currentMonth.minusMonths(1)
-        val monthFormatter = DateTimeFormatter.ofPattern("MMM d", Locale.US)
+        val monthFormatter = DateTimeFormatter.ofPattern("MMM d", Locale.getDefault())
 
         val currentMonthTransactions = transactions.filter {
             YearMonth.from(java.time.Instant.ofEpochMilli(it.timestampMillis).atZone(zoneId)) == currentMonth

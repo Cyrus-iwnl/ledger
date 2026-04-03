@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="home_summary_label_text_size">12sp</dimen>
+    <dimen name="insights_balance_label_text_size">15sp</dimen>
+    <dimen name="insights_total_label_text_size">12sp</dimen>
+</resources>

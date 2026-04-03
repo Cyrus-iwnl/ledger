@@ -115,7 +115,7 @@
                         android:text="@string/monthly_spending"
                         android:textAllCaps="true"
                         android:textColor="@color/text_hint"
-                        android:textSize="10sp"
+                        android:textSize="@dimen/home_summary_label_text_size"
                         android:textStyle="bold" />
 
                     <TextView
@@ -160,7 +160,7 @@
                                 android:text="@string/income_total_label"
                                 android:textAllCaps="true"
                                 android:textColor="@color/text_hint"
-                                android:textSize="10sp"
+                                android:textSize="@dimen/home_summary_label_text_size"
                                 android:textStyle="bold"/>
 
                             <TextView
@@ -204,7 +204,7 @@
                                 android:text="@string/remaining_label"
                                 android:textAllCaps="true"
                                 android:textColor="@color/text_hint"
-                                android:textSize="10sp"
+                                android:textSize="@dimen/home_summary_label_text_size"
                                 android:textStyle="bold" />
 
                             <TextView

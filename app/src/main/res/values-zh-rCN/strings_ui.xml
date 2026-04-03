@@ -3,7 +3,7 @@
     <string name="home_month_selector_placeholder">2026-03</string>
     <string name="home_amount_placeholder">&#165;.00</string>
     <string name="home_trend_filter">趋势筛选</string>
-    <string name="home_open_insights">打开洞察</string>
+    <string name="home_open_insights">打开统计</string>
     <string name="home_budget_not_set">未设置</string>
     <string name="home_budget_of_format">占预算 &#165;%1$s</string>
     <string name="home_trend_title_format">最近 %1$d 天汇总</string>
@@ -27,6 +27,10 @@
     <string name="dialog_datetime_hide_time">隐藏时间</string>
     <string name="dialog_datetime_hour">小时</string>
     <string name="dialog_datetime_minute">分钟</string>
+    <string name="dialog_datetime_year">年</string>
+    <string name="dialog_datetime_month">月</string>
+    <string name="dialog_datetime_day">日</string>
+    <string name="dialog_datetime_now">现在</string>
     <string name="dialog_apply">应用</string>
     <string name="dialog_trend_filter_title">图表筛选</string>
     <string name="dialog_trend_filter_dimension">维度</string>

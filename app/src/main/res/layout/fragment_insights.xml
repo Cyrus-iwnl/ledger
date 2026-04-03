@@ -256,7 +256,7 @@
                             android:textAllCaps="true"
                             android:textColor="@color/insights_on_surface_variant"
                             android:textFontWeight="700"
-                            android:textSize="13sp"
+                            android:textSize="@dimen/insights_balance_label_text_size"
                             android:letterSpacing="0.025" />
 
                         <TextView
@@ -349,7 +349,7 @@
                                     android:textAllCaps="true"
                                     android:textColor="@color/insights_on_surface_variant"
                                     android:textFontWeight="700"
-                                    android:textSize="10sp"
+                                    android:textSize="@dimen/insights_total_label_text_size"
                                     android:letterSpacing="0.025" />
                             </LinearLayout>
 
@@ -488,7 +488,7 @@
                                     android:textAllCaps="true"
                                     android:textColor="@color/insights_on_surface_variant"
                                     android:textFontWeight="700"
-                                    android:textSize="10sp"
+                                    android:textSize="@dimen/insights_total_label_text_size"
                                     android:letterSpacing="0.025" />
                             </LinearLayout>
 

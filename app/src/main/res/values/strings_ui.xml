@@ -26,6 +26,9 @@
     <string name="dialog_datetime_add_time">Add Time</string>
     <string name="dialog_datetime_hide_time">Hide Time</string>
     <string name="dialog_datetime_now">Now</string>
+    <string name="dialog_datetime_year">Year</string>
+    <string name="dialog_datetime_month">Month</string>
+    <string name="dialog_datetime_day">Day</string>
     <string name="dialog_datetime_hour">Hour</string>
     <string name="dialog_datetime_minute">Minute</string>
     <string name="dialog_apply">Apply</string>

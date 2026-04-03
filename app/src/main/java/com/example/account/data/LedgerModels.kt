@@ -96,8 +96,8 @@ data class TransactionDraft(
 
 object LedgerFormatters {
     private val moneyFormat = DecimalFormat("#,##0.00")
-    private val shortDateFormatter = DateTimeFormatter.ofPattern("MM.dd", Locale.getDefault())
-    private val dayLabelFormatter = DateTimeFormatter.ofPattern("MM.dd EEEE", Locale.getDefault())
+    private fun getShortDateFormatter(): DateTimeFormatter = DateTimeFormatter.ofPattern("MM.dd", Locale.getDefault())
+    private fun getDayLabelFormatter(): DateTimeFormatter = DateTimeFormatter.ofPattern("MM.dd EEEE", Locale.getDefault())
 
     fun money(value: Double, currency: CurrencyCode = CurrencyCode.CNY): String {
         return "${currency.symbol}${moneyFormat.format(value)}"
@@ -128,9 +128,9 @@ object LedgerFormatters {
             java.time.Instant.ofEpochMilli(millis),
             ZoneId.systemDefault()
         )
-        return date.format(dayLabelFormatter)
+        return date.format(getDayLabelFormatter())
     }
 
-    fun shortLabel(date: LocalDate): String = date.format(shortDateFormatter)
+    fun shortLabel(date: LocalDate): String = date.format(getShortDateFormatter())
 }
 
