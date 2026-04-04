@@ -1,11 +1,22 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="home_month_selector_placeholder">2026-03</string>
     <string name="home_amount_placeholder">&#165;.00</string>
     <string name="home_trend_filter">趋势筛选</string>
     <string name="home_open_insights">打开统计</string>
     <string name="home_budget_not_set">未设置</string>
+    <string name="home_budget_prefix">预算：</string>
+    <string name="home_budget_prefix_month">月预算：</string>
+    <string name="home_budget_prefix_year">年预算：</string>
+    <string name="home_budget_prefix_all">总预算：</string>
+    <string name="home_budget_amount_placeholder">&#165;0.00</string>
+    <string name="home_budget_amount_value_format">&#165;%1$s</string>
     <string name="home_budget_of_format">占预算 &#165;%1$s</string>
+    <string name="home_budget_amount_format">预算 &#165;%1$s</string>
+    <string name="home_budget_forecast_unknown">预计超预算：--</string>
+    <string name="home_budget_forecast_date_format">预计超预算：%1$s</string>
+    <string name="home_budget_forecast_safe">预计本周期内不超预算</string>
+    <string name="home_budget_forecast_over">已超预算</string>
     <string name="home_trend_title_format">最近 %1$d 天汇总</string>
     <string name="home_trend_summary_income_format">收入: %1$s</string>
     <string name="home_trend_summary_expense_format">支出: %1$s</string>

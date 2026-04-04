@@ -356,7 +356,6 @@ class EditTransactionFragment : Fragment() {
         }
         binding.keyDot.setOnClickListener { appendDot() }
         binding.keyBackspace.setOnClickListener { backspace() }
-        binding.keyClear.setOnClickListener { saveTransaction(closeAfterSave = false) }
         binding.keyPlus.setOnClickListener { applyAmountOperator(AmountOperator.ADD) }
         binding.keyMinus.setOnClickListener { applyAmountOperator(AmountOperator.SUBTRACT) }
     }
@@ -457,7 +456,6 @@ class EditTransactionFragment : Fragment() {
             binding.keyBackspace,
             binding.keyMinus,
             binding.keyPlus,
-            binding.keyClear,
             binding.keySave
         )
     }
@@ -636,7 +634,7 @@ class EditTransactionFragment : Fragment() {
     private fun updatePrimaryActionUi() {
         val saveColor = ContextCompat.getColor(
             requireContext(),
-            if (selectedType == TransactionType.EXPENSE) R.color.editor_tertiary else R.color.income_color
+            R.color.editor_save_green
         )
         binding.keySave.backgroundTintList = ColorStateList.valueOf(saveColor)
     }
@@ -673,7 +671,17 @@ class EditTransactionFragment : Fragment() {
     }
 
     private fun updateDateButtonText() {
-        binding.dateButton.text = formatDateTime(selectedDateMillis)
+        val display = formatDateTimeDisplay(selectedDateMillis)
+        binding.dateButton.text = display.text
+        if (display.isRelativeDay) {
+            binding.dateButton.gravity = android.view.Gravity.CENTER
+            binding.dateButton.maxLines = 1
+            binding.dateButton.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14f)
+        } else {
+            binding.dateButton.gravity = android.view.Gravity.START or android.view.Gravity.CENTER_VERTICAL
+            binding.dateButton.maxLines = 2
+            binding.dateButton.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
+        }
     }
 
     private fun updateCurrencyButtonText() {
@@ -695,18 +703,33 @@ class EditTransactionFragment : Fragment() {
     }
 
     private fun formatDateTime(millis: Long): String {
+        return formatDateTimeDisplay(millis).text
+    }
+
+    private fun formatDateTimeDisplay(millis: Long): DateTimeDisplay {
         val zoneId = ZoneId.systemDefault()
         val dateTime = Instant.ofEpochMilli(millis).atZone(zoneId)
         val date = dateTime.toLocalDate()
         val today = LocalDate.now(zoneId)
-        val dateText = when (date) {
-            today -> getString(R.string.date_today)
-            today.minusDays(1) -> getString(R.string.date_yesterday)
+        val isRelativeDay = date == today || date == today.minusDays(1)
+        val dateText = when {
+            date == today -> getString(R.string.date_today)
+            date == today.minusDays(1) -> getString(R.string.date_yesterday)
             else -> date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.getDefault()))
         }
         val timeText = dateTime.format(DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault()))
-        return "$dateText $timeText"
+        val text = if (isRelativeDay) {
+            "$dateText $timeText"
+        } else {
+            "$dateText\n$timeText"
+        }
+        return DateTimeDisplay(text = text, isRelativeDay = isRelativeDay)
     }
+
+    private data class DateTimeDisplay(
+        val text: String,
+        val isRelativeDay: Boolean
+    )
 
     private fun openDateTimePicker() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_transaction_datetime, null, false)

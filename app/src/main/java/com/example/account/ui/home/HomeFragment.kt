@@ -42,8 +42,10 @@ import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
+import java.time.temporal.ChronoUnit
 import java.util.Locale
 import kotlin.math.abs
+import kotlin.math.ceil
 import kotlin.math.roundToInt
 
 class HomeFragment : Fragment() {
@@ -138,21 +140,20 @@ class HomeFragment : Fragment() {
                 openMonthPicker()
             }
             binding.statsButton.setOnClickListener {
+                val currentMonth = when (selectedScope) {
+                    HomeScope.MONTH -> selectedMonth ?: monthPickerAnchorMonth
+                    HomeScope.YEAR -> YearMonth.of(selectedYear, monthPickerAnchorMonth.monthValue)
+                    HomeScope.ALL -> monthPickerAnchorMonth
+                }
                 val granularity = when (selectedScope) {
                     HomeScope.MONTH -> "MONTH"
                     HomeScope.YEAR -> "YEAR"
                     HomeScope.ALL -> "ALL"
                 }
-                val defaultYear = when (selectedScope) {
-                    HomeScope.MONTH -> (selectedMonth ?: monthPickerAnchorMonth).year
-                    HomeScope.YEAR -> selectedYear
-                    HomeScope.ALL -> selectedYear
-                }
-                val defaultMonthIndex = (selectedMonth ?: monthPickerAnchorMonth).monthValue - 1
                 (activity as? MainActivity)?.openInsights(
                     defaultGranularity = granularity,
-                    defaultYear = defaultYear,
-                    defaultMonthIndex = defaultMonthIndex
+                    defaultYear = currentMonth.year,
+                    defaultMonthIndex = currentMonth.monthValue - 1
                 )
             }
 
@@ -329,6 +330,7 @@ class HomeFragment : Fragment() {
             if (budgetCap == null || budgetCap <= 0.0) {
                 binding.budgetPercentText.text = "--"
                 binding.budgetProgressText.text = getString(R.string.home_budget_not_set)
+                binding.budgetForecastText.text = getString(R.string.home_budget_not_set)
                 binding.budgetProgressBar.progress = 0
                 binding.budgetProgressBar.setIndicatorColor(
                     requireContext().getColor(R.color.text_hint)
@@ -342,8 +344,13 @@ class HomeFragment : Fragment() {
                 val budgetProgress = budgetPercent.coerceAtMost(100)
                 binding.budgetPercentText.text = "${budgetPercent}%"
                 binding.budgetProgressText.text = getString(
-                    R.string.home_budget_of_format,
+                    R.string.home_budget_amount_value_format,
                     amountFormat.format(safeBudget)
+                )
+                binding.budgetForecastText.text = buildBudgetForecastText(
+                    scopedExpense = scopedExpense,
+                    budgetCap = safeBudget,
+                    dashboard = dashboard
                 )
                 binding.budgetProgressBar.progress = budgetProgress
                 binding.budgetProgressBar.setIndicatorColor(
@@ -399,6 +406,97 @@ class HomeFragment : Fragment() {
             amountFormat.format(point.income),
             amountFormat.format(point.expense)
         )
+    }
+
+    private fun buildBudgetForecastText(
+        scopedExpense: Double,
+        budgetCap: Double,
+        dashboard: LedgerDashboard
+    ): String {
+        if (budgetCap <= 0.0) {
+            return getString(R.string.home_budget_forecast_unknown)
+        }
+        if (scopedExpense >= budgetCap) {
+            return getString(R.string.home_budget_forecast_over)
+        }
+
+        val zoneId = ZoneId.systemDefault()
+        val today = LocalDate.now(zoneId)
+        val remaining = budgetCap - scopedExpense
+
+        return when (selectedScope) {
+            HomeScope.MONTH -> {
+                val month = selectedMonth ?: return getString(R.string.home_budget_forecast_unknown)
+                val isCurrentMonth = month.year == today.year && month.monthValue == today.monthValue
+                if (!isCurrentMonth) {
+                    return getString(R.string.home_budget_forecast_safe)
+                }
+                val elapsedDays = today.dayOfMonth.coerceAtLeast(1)
+                val runRate = scopedExpense / elapsedDays.toDouble()
+                if (!runRate.isFinite() || runRate <= 0.0) {
+                    return getString(R.string.home_budget_forecast_unknown)
+                }
+                val daysToOverrun = ceil(remaining / runRate).toLong().coerceAtLeast(1L)
+                val targetDate = today.plusDays(daysToOverrun)
+                if (targetDate.isAfter(month.atEndOfMonth())) {
+                    getString(R.string.home_budget_forecast_safe)
+                } else {
+                    getString(
+                        R.string.home_budget_forecast_date_format,
+                        formatForecastDate(targetDate)
+                    )
+                }
+            }
+
+            HomeScope.YEAR -> {
+                val isCurrentYear = selectedYear == today.year
+                if (!isCurrentYear) {
+                    return getString(R.string.home_budget_forecast_safe)
+                }
+                val elapsedDays = today.dayOfYear.coerceAtLeast(1)
+                val runRate = scopedExpense / elapsedDays.toDouble()
+                if (!runRate.isFinite() || runRate <= 0.0) {
+                    return getString(R.string.home_budget_forecast_unknown)
+                }
+                val daysToOverrun = ceil(remaining / runRate).toLong().coerceAtLeast(1L)
+                val targetDate = today.plusDays(daysToOverrun)
+                val yearEnd = LocalDate.of(selectedYear, 12, 31)
+                if (targetDate.isAfter(yearEnd)) {
+                    getString(R.string.home_budget_forecast_safe)
+                } else {
+                    getString(
+                        R.string.home_budget_forecast_date_format,
+                        formatForecastDate(targetDate)
+                    )
+                }
+            }
+
+            HomeScope.ALL -> {
+                val firstDate = dashboard.daySummaries
+                    .minByOrNull { it.dateMillis }
+                    ?.let { Instant.ofEpochMilli(it.dateMillis).atZone(zoneId).toLocalDate() }
+                    ?: today
+                val elapsedDays = ChronoUnit.DAYS.between(firstDate, today).toInt() + 1
+                if (elapsedDays <= 0) {
+                    return getString(R.string.home_budget_forecast_unknown)
+                }
+                val runRate = scopedExpense / elapsedDays.toDouble()
+                if (!runRate.isFinite() || runRate <= 0.0) {
+                    return getString(R.string.home_budget_forecast_unknown)
+                }
+                val daysToOverrun = ceil(remaining / runRate).toLong().coerceAtLeast(1L)
+                val targetDate = today.plusDays(daysToOverrun)
+                getString(
+                    R.string.home_budget_forecast_date_format,
+                    formatForecastDate(targetDate)
+                )
+            }
+        }
+    }
+
+    private fun formatForecastDate(date: LocalDate): String {
+        val pattern = if (localeTag == "en") "MMM d, yyyy" else "yyyy/M/d"
+        return date.format(DateTimeFormatter.ofPattern(pattern, numberLocale))
     }
 
     private fun buildHeaderAmount(value: Double): SpannableString {
@@ -483,6 +581,23 @@ class HomeFragment : Fragment() {
         cancelButton.setOnClickListener { dialog.dismiss() }
         saveButton.setOnClickListener {
             val raw = input.text?.toString()?.trim()?.replace(",", "") ?: ""
+            if (raw.isEmpty()) {
+                inputLayout.error = null
+                if (allMode) {
+                    viewModel.clearTotalBudget()
+                    monthlyBudgetCap = null
+                } else if (yearMode) {
+                    viewModel.clearYearlyBudget(selectedYear)
+                    monthlyBudgetCap = null
+                } else {
+                    val month = selectedMonth ?: return@setOnClickListener
+                    viewModel.clearMonthlyBudget(month)
+                    monthlyBudgetCap = viewModel.getMonthlyBudget(month)
+                }
+                latestDashboard?.let { renderDashboard(it) }
+                dialog.dismiss()
+                return@setOnClickListener
+            }
             if (!budgetInputPattern.matches(raw)) {
                 inputLayout.error = getString(R.string.home_budget_input_invalid_decimals)
                 return@setOnClickListener
@@ -778,6 +893,11 @@ class HomeFragment : Fragment() {
             HomeScope.ALL -> getString(R.string.home_scope_all_spending)
             HomeScope.YEAR -> getString(R.string.home_scope_yearly_spending)
             HomeScope.MONTH -> getString(R.string.monthly_spending)
+        }
+        binding.budgetLabelText.text = when (selectedScope) {
+            HomeScope.ALL -> getString(R.string.home_budget_prefix_all)
+            HomeScope.YEAR -> getString(R.string.home_budget_prefix_year)
+            HomeScope.MONTH -> getString(R.string.home_budget_prefix_month)
         }
         binding.monthSelector.text = formatSelectedMonth()
         binding.monthSelector.isClickable = true

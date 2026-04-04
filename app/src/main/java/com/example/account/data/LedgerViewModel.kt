@@ -143,6 +143,12 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
         _monthlyBudget.value = value
     }
 
+    fun clearMonthlyBudget(month: YearMonth) {
+        repository.clearMonthlyBudget(month)
+        currentBudgetMonth = month
+        _monthlyBudget.value = null
+    }
+
     fun getMonthlyExpense(month: YearMonth): Double = repository.getMonthlyExpense(month)
 
     fun getYearlyBudget(year: Int): Double? = repository.getYearlyBudget(year)
@@ -151,10 +157,18 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
         repository.setYearlyBudget(year, value)
     }
 
+    fun clearYearlyBudget(year: Int) {
+        repository.clearYearlyBudget(year)
+    }
+
     fun getTotalBudget(): Double? = repository.getTotalBudget()
 
     fun setTotalBudget(value: Double) {
         repository.setTotalBudget(value)
+    }
+
+    fun clearTotalBudget() {
+        repository.clearTotalBudget()
     }
 
     fun getTotalExpense(): Double = repository.getTotalExpense()

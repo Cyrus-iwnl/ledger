@@ -3,6 +3,7 @@ package com.example.account.ui.insights
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.RectF
 import android.text.TextPaint
 import android.util.AttributeSet
@@ -61,6 +62,8 @@ class InsightsTrendChartView @JvmOverloads constructor(
         style = Paint.Style.FILL
     }
     private val tooltipRect = RectF()
+    private val barPath = Path()
+    private val barRadii = FloatArray(8)
 
     private var buckets: List<InsightsTrendBucket> = emptyList()
     private var metric: InsightsMetric = InsightsMetric.EXPENSE
@@ -191,17 +194,17 @@ class InsightsTrendChartView @JvmOverloads constructor(
                 bottom = layout.chartBottom
             }
             val rect = RectF(left, top, right, bottom)
+            val roundTop = metric != InsightsMetric.BALANCE || value >= 0.0
+            val roundBottom = metric == InsightsMetric.BALANCE && value < 0.0
+            val barRadius = min(barWidth / 2f, rect.height() / 2f)
             if (selected == index) {
                 selectionPaint.color = colors.selection
-                canvas.drawRoundRect(
-                    RectF(rect.left - dp(2f), rect.top - dp(2f), rect.right + dp(2f), rect.bottom + dp(2f)),
-                    barWidth,
-                    barWidth,
-                    selectionPaint
-                )
+                val selectedRect = RectF(rect.left - dp(2f), rect.top - dp(2f), rect.right + dp(2f), rect.bottom + dp(2f))
+                val selectedRadius = min(selectedRect.width() / 2f, selectedRect.height() / 2f)
+                drawBarRect(canvas, selectedRect, selectedRadius, roundTop, roundBottom, selectionPaint)
             }
             barPaint.color = barColor
-            canvas.drawRoundRect(rect, barWidth, barWidth, barPaint)
+            drawBarRect(canvas, rect, barRadius, roundTop, roundBottom, barPaint)
         }
 
         val maxLabelWidth = buckets.maxOfOrNull { labelTextPaint.measureText(it.label) } ?: 0f
@@ -413,6 +416,35 @@ class InsightsTrendChartView @JvmOverloads constructor(
         val symbols = DecimalFormatSymbols.getInstance(numberLocale)
         val sign = if (value < 0.0) "-" else ""
         return "$sign$CNY_SYMBOL${DecimalFormat("#,##0.00", symbols).format(abs(value))}"
+    }
+
+    private fun drawBarRect(
+        canvas: Canvas,
+        rect: RectF,
+        radius: Float,
+        roundTop: Boolean,
+        roundBottom: Boolean,
+        paint: Paint
+    ) {
+        if (rect.width() <= 0f || rect.height() <= 0f) return
+        if (!roundTop && !roundBottom) {
+            canvas.drawRect(rect, paint)
+            return
+        }
+        val r = min(radius, min(rect.width(), rect.height()) / 2f)
+        val topRadius = if (roundTop) r else 0f
+        val bottomRadius = if (roundBottom) r else 0f
+        barRadii[0] = topRadius
+        barRadii[1] = topRadius
+        barRadii[2] = topRadius
+        barRadii[3] = topRadius
+        barRadii[4] = bottomRadius
+        barRadii[5] = bottomRadius
+        barRadii[6] = bottomRadius
+        barRadii[7] = bottomRadius
+        barPath.reset()
+        barPath.addRoundRect(rect, barRadii, Path.Direction.CW)
+        canvas.drawPath(barPath, paint)
     }
 
     companion object {

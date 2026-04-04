@@ -8,6 +8,7 @@
     <color name="secondary_accent">#10B981</color>
     <color name="expense_color">#F87171</color>
     <color name="income_color">#10B981</color>
+    <color name="editor_save_green">#2fc56b</color>
     <color name="text_primary">#1A2B47</color>
     <color name="text_secondary">#334155</color>
     <color name="text_hint">#9CA3AF</color>

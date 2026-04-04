@@ -1,11 +1,22 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="home_month_selector_placeholder">2026-03</string>
     <string name="home_amount_placeholder">&#165;.00</string>
     <string name="home_trend_filter">Trend Filter</string>
     <string name="home_open_insights">Open insights</string>
     <string name="home_budget_not_set">Not set</string>
+    <string name="home_budget_prefix">Budget:</string>
+    <string name="home_budget_prefix_month">Monthly Budget:</string>
+    <string name="home_budget_prefix_year">Yearly Budget:</string>
+    <string name="home_budget_prefix_all">Total Budget:</string>
+    <string name="home_budget_amount_placeholder">&#165;0.00</string>
+    <string name="home_budget_amount_value_format">&#165;%1$s</string>
     <string name="home_budget_of_format">of &#165;%1$s</string>
+    <string name="home_budget_amount_format">Budget &#165;%1$s</string>
+    <string name="home_budget_forecast_unknown">Forecast unavailable</string>
+    <string name="home_budget_forecast_date_format">Forecast over on %1$s</string>
+    <string name="home_budget_forecast_safe">Forecast: within budget</string>
+    <string name="home_budget_forecast_over">Forecast: already over budget</string>
     <string name="home_trend_title_format">Last %1$d Days Summary</string>
     <string name="home_trend_summary_income_format">Income: %1$s</string>
     <string name="home_trend_summary_expense_format">Expense: %1$s</string>

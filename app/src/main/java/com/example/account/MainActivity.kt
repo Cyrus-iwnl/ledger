@@ -54,6 +54,8 @@ class MainActivity : AppCompatActivity() {
                     override fun handleOnBackPressed() {
                         if (supportFragmentManager.backStackEntryCount > 0) {
                             supportFragmentManager.popBackStack()
+                        } else if (shouldReturnHomeOnRootBack()) {
+                            showHome()
                         } else {
                             finish()
                         }
@@ -169,5 +171,11 @@ class MainActivity : AppCompatActivity() {
     private fun updateChrome() {
         val isHomeVisible = supportFragmentManager.findFragmentById(R.id.fragment_container) is HomeFragment
         binding.fabAdd.isVisible = isHomeVisible
+    }
+
+    private fun shouldReturnHomeOnRootBack(): Boolean {
+        val currentFragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
+        val startupPage = StartupPageManager.currentStartupPage(this)
+        return startupPage == AppStartupPage.TRANSACTION && currentFragment is EditTransactionFragment
     }
 }

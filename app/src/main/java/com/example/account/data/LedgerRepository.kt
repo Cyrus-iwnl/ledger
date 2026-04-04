@@ -545,8 +545,11 @@ class LedgerRepository(context: Context) {
 
     fun getMonthlyBudget(month: YearMonth): Double? = synchronized(lock) {
         val ledgerId = currentLedgerId
-        explicitMonthlyBudget(month, ledgerId)
-            ?: explicitMonthlyBudget(month.minusMonths(1), ledgerId)
+        val currentBudget = explicitMonthlyBudget(month, ledgerId)
+        if (prefs.contains(budgetKey(month, ledgerId))) {
+            return@synchronized currentBudget
+        }
+        currentBudget ?: explicitMonthlyBudget(month.minusMonths(1), ledgerId)
     }
 
     fun setMonthlyBudget(month: YearMonth, value: Double) = synchronized(lock) {
@@ -554,6 +557,13 @@ class LedgerRepository(context: Context) {
         require(BigDecimal.valueOf(value).scale() <= 2) { "Monthly budget can have up to 2 decimal places." }
         prefs.edit()
             .putString(budgetKey(month, currentLedgerId), value.toString())
+            .remove(KEY_MONTHLY_BUDGET_LEGACY)
+            .apply()
+    }
+
+    fun clearMonthlyBudget(month: YearMonth) = synchronized(lock) {
+        prefs.edit()
+            .putString(budgetKey(month, currentLedgerId), MONTHLY_BUDGET_CLEARED_MARKER)
             .remove(KEY_MONTHLY_BUDGET_LEGACY)
             .apply()
     }
@@ -572,6 +582,12 @@ class LedgerRepository(context: Context) {
             .apply()
     }
 
+    fun clearYearlyBudget(year: Int) = synchronized(lock) {
+        prefs.edit()
+            .remove(yearlyBudgetKey(year, currentLedgerId))
+            .apply()
+    }
+
     fun getTotalBudget(): Double? = synchronized(lock) {
         prefs.getString(projectBudgetKey(currentLedgerId), null)
             ?.toDoubleOrNull()
@@ -583,6 +599,12 @@ class LedgerRepository(context: Context) {
         require(BigDecimal.valueOf(value).scale() <= 2) { "Project budget can have up to 2 decimal places." }
         prefs.edit()
             .putString(projectBudgetKey(currentLedgerId), value.toString())
+            .apply()
+    }
+
+    fun clearTotalBudget() = synchronized(lock) {
+        prefs.edit()
+            .remove(projectBudgetKey(currentLedgerId))
             .apply()
     }
 
@@ -950,8 +972,15 @@ class LedgerRepository(context: Context) {
         "$KEY_PROJECT_BUDGET_PREFIX$ledgerId"
 
     private fun explicitMonthlyBudget(month: YearMonth, ledgerId: String): Double? {
-        return prefs.getString(budgetKey(month, ledgerId), null)?.toDoubleOrNull()?.takeIf { it > 0.0 }
-            ?: legacyMonthlyBudget(month, ledgerId)
+        val key = budgetKey(month, ledgerId)
+        val stored = prefs.getString(key, null)
+        if (stored == MONTHLY_BUDGET_CLEARED_MARKER) {
+            return null
+        }
+        if (prefs.contains(key)) {
+            return stored?.toDoubleOrNull()?.takeIf { it > 0.0 }
+        }
+        return legacyMonthlyBudget(month, ledgerId)
     }
 
     private fun legacyMonthlyBudget(month: YearMonth, ledgerId: String): Double? {
@@ -993,6 +1022,7 @@ class LedgerRepository(context: Context) {
         private const val KEY_MONTHLY_BUDGET_LEGACY = "monthly_budget"
         private const val KEY_YEARLY_BUDGET_PREFIX = "yearly_budget_"
         private const val KEY_PROJECT_BUDGET_PREFIX = "project_budget_"
+        private const val MONTHLY_BUDGET_CLEARED_MARKER = "__cleared__"
     }
 }
 
