@@ -51,6 +51,9 @@ class LedgerSettingsFragment : Fragment() {
                     viewModel.switchLedger(ledger.id)
                 }
             },
+            onRenameClick = { ledger ->
+                requestRenameLedger(ledger)
+            },
             onDeleteClick = { ledger ->
                 requestDeleteLedger(ledger)
             }
@@ -77,11 +80,38 @@ class LedgerSettingsFragment : Fragment() {
     }
 
     private fun showAddLedgerDialog() {
+        showLedgerNameDialog(
+            title = getString(R.string.settings_ledger_add_title)
+        ) { name ->
+            viewModel.addLedger(name)
+        }
+    }
+
+    private fun requestRenameLedger(ledger: LedgerBook) {
+        showLedgerNameDialog(
+            title = getString(R.string.settings_ledger_rename_title),
+            initialValue = ledger.name
+        ) { name ->
+            viewModel.renameLedger(ledger.id, name)
+        }
+    }
+
+    private fun showLedgerNameDialog(
+        title: String,
+        initialValue: String = "",
+        onSave: (String) -> Unit
+    ) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_add_ledger, null, false)
+        val titleText = dialogView.findViewById<TextView>(R.id.dialog_title_text)
         val inputLayout = dialogView.findViewById<TextInputLayout>(R.id.ledger_input_layout)
         val input = dialogView.findViewById<TextInputEditText>(R.id.ledger_input)
         val cancelButton = dialogView.findViewById<MaterialButton>(R.id.cancel_button)
         val saveButton = dialogView.findViewById<MaterialButton>(R.id.save_button)
+        val originalName = initialValue.trim()
+
+        titleText.text = title
+        input.setText(initialValue)
+        input.setSelection(input.text?.length ?: 0)
 
         val dialog = DialogFactory.createCardDialog(requireContext(), dialogView)
         cancelButton.setOnClickListener { dialog.dismiss() }
@@ -92,7 +122,11 @@ class LedgerSettingsFragment : Fragment() {
                 return@setOnClickListener
             }
             inputLayout.error = null
-            viewModel.addLedger(name)
+            if (name == originalName) {
+                dialog.dismiss()
+                return@setOnClickListener
+            }
+            onSave(name)
             dialog.dismiss()
         }
         dialog.show()

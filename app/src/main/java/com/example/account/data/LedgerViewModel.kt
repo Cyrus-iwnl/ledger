@@ -87,6 +87,15 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
         return ledger
     }
 
+    fun renameLedger(ledgerId: String, name: String): Boolean {
+        val renamed = repository.renameLedger(ledgerId, name)
+        if (!renamed) {
+            return false
+        }
+        refreshLedgerState()
+        return true
+    }
+
     fun deleteLedger(ledgerId: String): Boolean {
         val deleted = repository.deleteLedger(ledgerId)
         if (!deleted) {

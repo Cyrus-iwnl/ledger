@@ -56,7 +56,7 @@ class HomeFragment : Fragment() {
     private lateinit var adapter: HomeDayAdapter
     private val amountFormat = DecimalFormat("#,##0.00")
     private val budgetInputPattern = Regex("^\\d+(\\.\\d{1,2})?$")
-    private val transactionTimeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.getDefault())
+    private var transactionTimeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.getDefault())
     private var latestDashboard: LedgerDashboard? = null
     private var monthlyBudgetCap: Double? = null
     private var selectedMonth: YearMonth? = YearMonth.now()
@@ -69,6 +69,7 @@ class HomeFragment : Fragment() {
     private var localeTag: String = "en"
     private var numberLocale: Locale = Locale.US
     private var monthWord: String = "Month"
+    private var needsLocaleDrivenDashboardRefresh: Boolean = true
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -88,9 +89,7 @@ class HomeFragment : Fragment() {
                 LedgerViewModel.Factory(requireActivity().application)
             )[LedgerViewModel::class.java]
 
-            localeTag = normalizeInsightsLocaleTag(resources.configuration.locales[0]?.toLanguageTag())
-            numberLocale = insightsNumberLocale(localeTag)
-            monthWord = insightsText(localeTag).month
+            syncLocaleStateFromResources(force = true)
 
             restoreHomeScopePreference()
             restoreTrendFilterPreference()
@@ -797,7 +796,7 @@ class HomeFragment : Fragment() {
         val dialog = createStyledDialog(dialogView)
 
         val originalAmount = transaction.originalExpenseAmount()
-        val maxRefundable = originalAmount - transaction.refundedAmount
+        val maxRefundAmount = originalAmount.coerceAtLeast(0.0)
         originalText.text = getString(
             R.string.refund_original_and_refunded_format,
             amountFormat.format(originalAmount),
@@ -805,7 +804,7 @@ class HomeFragment : Fragment() {
         )
 
         input.filters = arrayOf(decimalDigitsFilter(2))
-        input.setText(amountFormat.format(originalAmount).replace(",", ""))
+        input.setText(amountFormat.format(transaction.refundedAmount).replace(",", ""))
         input.setSelection(input.text?.length ?: 0)
 
         cancelButton.setOnClickListener { dialog.dismiss() }
@@ -816,14 +815,14 @@ class HomeFragment : Fragment() {
                 return@setOnClickListener
             }
             val value = raw.toDoubleOrNull()
-            if (value == null || !value.isFinite() || value <= 0.0) {
+            if (value == null || !value.isFinite() || value < 0.0) {
                 inputLayout.error = getString(R.string.home_budget_input_invalid_positive)
                 return@setOnClickListener
             }
-            if (value > maxRefundable) {
+            if (value > maxRefundAmount) {
                 inputLayout.error = getString(
                     R.string.refund_amount_too_large_format,
-                    amountFormat.format(maxRefundable)
+                    amountFormat.format(maxRefundAmount)
                 )
                 return@setOnClickListener
             }
@@ -834,7 +833,7 @@ class HomeFragment : Fragment() {
             } catch (_: IllegalArgumentException) {
                 inputLayout.error = getString(
                     R.string.refund_amount_too_large_format,
-                    amountFormat.format(maxRefundable)
+                    amountFormat.format(maxRefundAmount)
                 )
             }
         }
@@ -937,7 +936,29 @@ class HomeFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
+        val localeChanged = syncLocaleStateFromResources()
+        if (localeChanged) {
+            applyLedgerModeUi()
+            needsLocaleDrivenDashboardRefresh = true
+        }
+        if (needsLocaleDrivenDashboardRefresh) {
+            refreshBudgetForSelection()
+            viewModel.refresh()
+            needsLocaleDrivenDashboardRefresh = false
+        }
         applyHomeSystemBars()
+    }
+
+    private fun syncLocaleStateFromResources(force: Boolean = false): Boolean {
+        val resolvedTag = normalizeInsightsLocaleTag(resources.configuration.locales[0]?.toLanguageTag())
+        if (!force && resolvedTag == localeTag) {
+            return false
+        }
+        localeTag = resolvedTag
+        numberLocale = insightsNumberLocale(resolvedTag)
+        monthWord = insightsText(resolvedTag).month
+        transactionTimeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.getDefault())
+        return true
     }
 
     private fun applyHomeSystemBars() {

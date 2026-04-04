@@ -25,7 +25,11 @@ object LanguageManager {
     fun applySavedLanguage(context: Context) {
         PerfTrace.measure("LanguageManager.applySavedLanguage") {
             val savedLanguage = prefs(context).getString(KEY_LANGUAGE, null)
-            val language = AppLanguage.fromLanguageTag(savedLanguage) ?: return@measure
+            val language = AppLanguage.fromLanguageTag(savedLanguage) ?: inferLanguage(systemLocale(context)).also {
+                prefs(context).edit()
+                    .putString(KEY_LANGUAGE, it.languageTag)
+                    .apply()
+            }
             applyLanguage(language)
         }
     }
@@ -36,7 +40,7 @@ object LanguageManager {
         if (saved != null) {
             return saved
         }
-        val locale = AppCompatDelegate.getApplicationLocales()[0] ?: Locale.getDefault()
+        val locale = AppCompatDelegate.getApplicationLocales()[0] ?: systemLocale(context)
         return inferLanguage(locale)
     }
 
@@ -69,6 +73,10 @@ object LanguageManager {
             }
         }
         return AppLanguage.ENGLISH
+    }
+
+    private fun systemLocale(context: Context): Locale {
+        return context.resources.configuration.locales[0] ?: Locale.getDefault()
     }
 
     private fun prefs(context: Context) =

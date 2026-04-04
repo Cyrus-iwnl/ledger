@@ -4,14 +4,15 @@
     <string name="settings_close">Back</string>
     <string name="settings_language_title">Language</string>
     <string name="settings_language_subtitle">Choose app language</string>
-    <string name="language_simplified_chinese">Simplified Chinese</string>
-    <string name="language_traditional_chinese">Traditional Chinese</string>
+    <string name="language_simplified_chinese">&#31616;&#20307;&#20013;&#25991;</string>
+    <string name="language_traditional_chinese">&#32321;&#39636;&#20013;&#25991;</string>
     <string name="language_english">English</string>
     <string name="settings_ledger_title">Ledger</string>
     <string name="settings_ledger_subtitle">Manage ledgers</string>
     <string name="settings_ledger_page_title">Ledgers</string>
     <string name="settings_ledger_current_tag">Current</string>
     <string name="settings_ledger_add_title">Add ledger</string>
+    <string name="settings_ledger_rename_title">Rename ledger</string>
     <string name="settings_ledger_delete_title">Delete ledger</string>
     <string name="settings_ledger_name_hint">Ledger name</string>
     <string name="settings_ledger_name_empty">Please enter a ledger name</string>
@@ -62,4 +63,10 @@
     <string name="settings_currency_name_chf">Swiss Franc (%1$s)</string>
     <string name="settings_currency_name_thb">Thai Baht (%1$s)</string>
     <string name="settings_currency_name_mop">Macanese Pataca (%1$s)</string>
+    <string name="settings_currency_name_inr">Indian Rupee (%1$s)</string>
+    <string name="settings_currency_name_aed">UAE Dirham (%1$s)</string>
+    <string name="settings_currency_name_sar">Saudi Riyal (%1$s)</string>
+    <string name="settings_currency_name_rub">Russian Ruble (%1$s)</string>
+    <string name="settings_currency_name_brl">Brazilian Real (%1$s)</string>
+    <string name="settings_currency_name_mxn">Mexican Peso (%1$s)</string>
 </resources>

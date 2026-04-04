@@ -733,6 +733,12 @@ class EditTransactionFragment : Fragment() {
             CurrencyCode.CHF -> R.string.settings_currency_name_chf
             CurrencyCode.THB -> R.string.settings_currency_name_thb
             CurrencyCode.MOP -> R.string.settings_currency_name_mop
+            CurrencyCode.INR -> R.string.settings_currency_name_inr
+            CurrencyCode.AED -> R.string.settings_currency_name_aed
+            CurrencyCode.SAR -> R.string.settings_currency_name_sar
+            CurrencyCode.RUB -> R.string.settings_currency_name_rub
+            CurrencyCode.BRL -> R.string.settings_currency_name_brl
+            CurrencyCode.MXN -> R.string.settings_currency_name_mxn
         }
     }
 

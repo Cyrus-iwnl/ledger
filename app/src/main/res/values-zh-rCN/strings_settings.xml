@@ -12,6 +12,7 @@
     <string name="settings_ledger_page_title">&#36134;&#26412;</string>
     <string name="settings_ledger_current_tag">&#24403;&#21069;</string>
     <string name="settings_ledger_add_title">&#26032;&#22686;&#36134;&#26412;</string>
+    <string name="settings_ledger_rename_title">&#37325;&#21629;&#21517;&#36134;&#26412;</string>
     <string name="settings_ledger_delete_title">&#21024;&#38500;&#36134;&#26412;</string>
     <string name="settings_ledger_name_hint">&#35831;&#36755;&#20837;&#36134;&#26412;&#21517;&#31216;</string>
     <string name="settings_ledger_name_empty">&#35831;&#36755;&#20837;&#36134;&#26412;&#21517;&#31216;</string>

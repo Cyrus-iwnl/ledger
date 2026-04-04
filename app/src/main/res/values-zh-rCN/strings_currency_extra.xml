@@ -7,4 +7,10 @@
     <string name="settings_currency_name_chf">瑞士法郎 (%1$s)</string>
     <string name="settings_currency_name_thb">泰铢 (%1$s)</string>
     <string name="settings_currency_name_mop">澳门元 (%1$s)</string>
+    <string name="settings_currency_name_inr">&#21360;&#24230;&#21346;&#27604; (%1$s)</string>
+    <string name="settings_currency_name_aed">&#38463;&#32852;&#37193;&#36842;&#25289;&#22982; (%1$s)</string>
+    <string name="settings_currency_name_sar">&#27801;&#29305;&#37324;&#20122;&#23572; (%1$s)</string>
+    <string name="settings_currency_name_rub">&#20420;&#32599;&#26031;&#21346;&#24067; (%1$s)</string>
+    <string name="settings_currency_name_brl">&#24052;&#35199;&#38647;&#20122;&#23572; (%1$s)</string>
+    <string name="settings_currency_name_mxn">&#22696;&#35199;&#21733;&#27604;&#32034; (%1$s)</string>
 </resources>

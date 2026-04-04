@@ -1,14 +1,18 @@
 package com.example.account.ui.settings
 
 import android.os.Bundle
+import android.graphics.drawable.PictureDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.annotation.RawRes
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import com.caverock.androidsvg.SVG
 import com.example.account.R
 import com.example.account.data.CurrencyCode
 import com.example.account.data.LedgerViewModel
@@ -66,14 +70,14 @@ class ExchangeRateSettingsFragment : Fragment() {
         currencies.forEachIndexed { index, currency ->
             val itemView = layoutInflater.inflate(R.layout.item_exchange_rate, binding.rateListContainer, false)
             val row = itemView.findViewById<View>(R.id.exchange_rate_row)
-            val flagText = itemView.findViewById<TextView>(R.id.currency_flag_text)
+            val flagImage = itemView.findViewById<ImageView>(R.id.currency_flag_image)
             val labelText = itemView.findViewById<TextView>(R.id.currency_label_text)
             val rateValueText = itemView.findViewById<TextView>(R.id.currency_rate_value_text)
             val chevron = itemView.findViewById<View>(R.id.currency_chevron)
             val divider = itemView.findViewById<View>(R.id.row_divider)
             val rateValue = viewModel.getExchangeRateToCny(currency)
 
-            flagText.text = flagByCurrency(currency)
+            bindLocalFlagSvg(flagImage, currency)
             labelText.text = getString(currencyNameRes(currency), currency.symbol)
             rateValueText.text = getString(R.string.settings_exchange_rate_value_format, formatRate(rateValue))
             divider.visibility = if (index == currencies.lastIndex) View.GONE else View.VISIBLE
@@ -234,22 +238,55 @@ class ExchangeRateSettingsFragment : Fragment() {
         }.getOrNull()?.takeIf { it.isNotBlank() }
     }
 
-    private fun flagByCurrency(currency: CurrencyCode): String {
+    @RawRes
+    private fun flagSvgRawByCurrency(currency: CurrencyCode): Int {
         return when (currency) {
-            CurrencyCode.CNY -> "\uD83C\uDDE8\uD83C\uDDF3"
-            CurrencyCode.HKD -> "\uD83C\uDDED\uD83C\uDDF0"
-            CurrencyCode.TWD -> "\uD83C\uDDE8\uD83C\uDDF3"
-            CurrencyCode.USD -> "\uD83C\uDDFA\uD83C\uDDF8"
-            CurrencyCode.GBP -> "\uD83C\uDDEC\uD83C\uDDE7"
-            CurrencyCode.EUR -> "\uD83C\uDDEA\uD83C\uDDFA"
-            CurrencyCode.JPY -> "\uD83C\uDDEF\uD83C\uDDF5"
-            CurrencyCode.KRW -> "\uD83C\uDDF0\uD83C\uDDF7"
-            CurrencyCode.AUD -> "\uD83C\uDDE6\uD83C\uDDFA"
-            CurrencyCode.CAD -> "\uD83C\uDDE8\uD83C\uDDE6"
-            CurrencyCode.SGD -> "\uD83C\uDDF8\uD83C\uDDEC"
-            CurrencyCode.CHF -> "\uD83C\uDDE8\uD83C\uDDED"
-            CurrencyCode.THB -> "\uD83C\uDDF9\uD83C\uDDED"
-            CurrencyCode.MOP -> "\uD83C\uDDF2\uD83C\uDDF4"
+            CurrencyCode.CNY -> R.raw.flag_cny
+            CurrencyCode.HKD -> R.raw.flag_hkd
+            CurrencyCode.TWD -> R.raw.flag_cny
+            CurrencyCode.USD -> R.raw.flag_usd
+            CurrencyCode.GBP -> R.raw.flag_gbp
+            CurrencyCode.EUR -> R.raw.flag_eur
+            CurrencyCode.JPY -> R.raw.flag_jpy
+            CurrencyCode.KRW -> R.raw.flag_krw
+            CurrencyCode.AUD -> R.raw.flag_aud
+            CurrencyCode.CAD -> R.raw.flag_cad
+            CurrencyCode.SGD -> R.raw.flag_sgd
+            CurrencyCode.CHF -> R.raw.flag_chf
+            CurrencyCode.THB -> R.raw.flag_thb
+            CurrencyCode.MOP -> R.raw.flag_mop
+            CurrencyCode.INR -> R.raw.flag_inr
+            CurrencyCode.AED -> R.raw.flag_aed
+            CurrencyCode.SAR -> R.raw.flag_sar
+            CurrencyCode.RUB -> R.raw.flag_rub
+            CurrencyCode.BRL -> R.raw.flag_brl
+            CurrencyCode.MXN -> R.raw.flag_mxn
+        }
+    }
+
+    private fun bindLocalFlagSvg(flagImage: ImageView, currency: CurrencyCode) {
+        val flagRawRes = flagSvgRawByCurrency(currency)
+        val loaded = runCatching {
+            resources.openRawResource(flagRawRes).use { input ->
+                val svg = SVG.getFromInputStream(input)
+                val picture = svg.renderToPicture()
+                flagImage.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+                flagImage.setImageDrawable(PictureDrawable(picture))
+            }
+        }.isSuccess
+        if (!loaded) {
+            val fallbackLoaded = runCatching {
+                resources.openRawResource(R.raw.flag_cny).use { input ->
+                    val svg = SVG.getFromInputStream(input)
+                    val picture = svg.renderToPicture()
+                    flagImage.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+                    flagImage.setImageDrawable(PictureDrawable(picture))
+                }
+            }.isSuccess
+            if (!fallbackLoaded) {
+                flagImage.setLayerType(View.LAYER_TYPE_NONE, null)
+                flagImage.setImageDrawable(null)
+            }
         }
     }
 
@@ -269,6 +306,12 @@ class ExchangeRateSettingsFragment : Fragment() {
             CurrencyCode.CHF -> R.string.settings_currency_name_chf
             CurrencyCode.THB -> R.string.settings_currency_name_thb
             CurrencyCode.MOP -> R.string.settings_currency_name_mop
+            CurrencyCode.INR -> R.string.settings_currency_name_inr
+            CurrencyCode.AED -> R.string.settings_currency_name_aed
+            CurrencyCode.SAR -> R.string.settings_currency_name_sar
+            CurrencyCode.RUB -> R.string.settings_currency_name_rub
+            CurrencyCode.BRL -> R.string.settings_currency_name_brl
+            CurrencyCode.MXN -> R.string.settings_currency_name_mxn
         }
     }
 

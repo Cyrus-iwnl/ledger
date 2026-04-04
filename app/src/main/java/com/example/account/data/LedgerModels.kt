@@ -20,13 +20,28 @@ enum class CurrencyCode(val code: String, val symbol: String, val defaultRateToC
     USD("USD", "$", 7.20),
     EUR("EUR", "\u20AC", 7.80),
     GBP("GBP", "\u00A3", 9.10),
-    JPY("JPY", "\u00A5", 0.050),
+    JPY("JPY", "J\uFFE5", 0.050),
     KRW("KRW", "\u20A9", 0.0053),
     AUD("AUD", "A$", 4.70),
     CAD("CAD", "C$", 5.20),
     SGD("SGD", "S$", 5.30),
     CHF("CHF", "CHF", 8.20),
-    THB("THB", "\u0E3F", 0.20)
+    THB("THB", "\u0E3F", 0.20),
+    INR("INR", "\u20B9", 0.086),
+    AED("AED", "AED", 1.96),
+    SAR("SAR", "SAR", 1.92),
+    RUB("RUB", "\u20BD", 0.079),
+    BRL("BRL", "R$", 1.45),
+    MXN("MXN", "MX$", 0.36);
+
+    companion object {
+        fun fromCode(code: String?): CurrencyCode? {
+            val raw = code?.trim().orEmpty()
+            return values().firstOrNull {
+                it.name.equals(raw, ignoreCase = true) || it.code.equals(raw, ignoreCase = true)
+            }
+        }
+    }
 }
 
 enum class LedgerBookType {
@@ -38,6 +53,15 @@ data class LedgerBook(
     val id: String,
     val name: String,
     val type: LedgerBookType = LedgerBookType.NORMAL
+)
+
+data class LedgerExportSummary(
+    val ledgerCount: Int
+)
+
+data class LedgerImportSummary(
+    val ledgerCount: Int,
+    val transactionCount: Int
 )
 
 data class LedgerCategory(

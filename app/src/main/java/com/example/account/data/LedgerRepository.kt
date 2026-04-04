@@ -8,14 +8,21 @@ import com.example.account.R
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.io.InputStream
+import java.io.OutputStream
 import java.math.BigDecimal
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Currency
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
 
 class LedgerRepository(context: Context) {
 
@@ -27,8 +34,73 @@ class LedgerRepository(context: Context) {
     private var ledgers: MutableList<LedgerBook> = mutableListOf()
     private var currentLedgerId: String = DEFAULT_LEDGER_ID
     private val transactionsCache: MutableMap<String, List<LedgerTransaction>> = mutableMapOf()
-    private fun getSectionDateFormatter(): DateTimeFormatter = DateTimeFormatter.ofPattern("MM.dd EEEE", Locale.getDefault())
-    private fun getSectionDateFormatterWithYear(): DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd EEEE", Locale.getDefault())
+
+    private data class BackupLedgerPayload(
+        val ledger: LedgerBook,
+        val isCurrent: Boolean,
+        val transactions: List<LedgerTransaction>,
+        val budgetPrefs: Map<String, String>
+    )
+
+    private fun formatSectionDate(date: LocalDate, includeYear: Boolean): String {
+        val pattern = if (includeYear) "yyyy.MM.dd" else "MM.dd"
+        val dateText = date.format(DateTimeFormatter.ofPattern(pattern, Locale.getDefault()))
+        return "$dateText ${localizedWeekday(date.dayOfWeek)}"
+    }
+
+    private fun localizedWeekday(dayOfWeek: DayOfWeek): String {
+        val localeTag = appContext.resources.configuration.locales[0]
+            ?.toLanguageTag()
+            .orEmpty()
+            .lowercase(Locale.US)
+        return when {
+            localeTag.startsWith("zh-tw") || localeTag.startsWith("zh-hk") || localeTag.startsWith("zh-mo") || localeTag.contains("hant") -> {
+                traditionalChineseWeekday(dayOfWeek)
+            }
+            localeTag.startsWith("zh") -> {
+                simplifiedChineseWeekday(dayOfWeek)
+            }
+            else -> {
+                englishWeekday(dayOfWeek)
+            }
+        }
+    }
+
+    private fun simplifiedChineseWeekday(dayOfWeek: DayOfWeek): String {
+        return when (dayOfWeek) {
+            DayOfWeek.MONDAY -> "\u661f\u671f\u4e00"
+            DayOfWeek.TUESDAY -> "\u661f\u671f\u4e8c"
+            DayOfWeek.WEDNESDAY -> "\u661f\u671f\u4e09"
+            DayOfWeek.THURSDAY -> "\u661f\u671f\u56db"
+            DayOfWeek.FRIDAY -> "\u661f\u671f\u4e94"
+            DayOfWeek.SATURDAY -> "\u661f\u671f\u516d"
+            DayOfWeek.SUNDAY -> "\u661f\u671f\u65e5"
+        }
+    }
+
+    private fun traditionalChineseWeekday(dayOfWeek: DayOfWeek): String {
+        return when (dayOfWeek) {
+            DayOfWeek.MONDAY -> "\u9031\u4e00"
+            DayOfWeek.TUESDAY -> "\u9031\u4e8c"
+            DayOfWeek.WEDNESDAY -> "\u9031\u4e09"
+            DayOfWeek.THURSDAY -> "\u9031\u56db"
+            DayOfWeek.FRIDAY -> "\u9031\u4e94"
+            DayOfWeek.SATURDAY -> "\u9031\u516d"
+            DayOfWeek.SUNDAY -> "\u9031\u65e5"
+        }
+    }
+
+    private fun englishWeekday(dayOfWeek: DayOfWeek): String {
+        return when (dayOfWeek) {
+            DayOfWeek.MONDAY -> "Monday"
+            DayOfWeek.TUESDAY -> "Tuesday"
+            DayOfWeek.WEDNESDAY -> "Wednesday"
+            DayOfWeek.THURSDAY -> "Thursday"
+            DayOfWeek.FRIDAY -> "Friday"
+            DayOfWeek.SATURDAY -> "Saturday"
+            DayOfWeek.SUNDAY -> "Sunday"
+        }
+    }
 
     val categories: List<LedgerCategory> = listOf(
         LedgerCategory("expense_meals", "Meals", TransactionType.EXPENSE, R.drawable.ic_dashboard_restaurant_24, "restaurant", Color.parseColor("#FF9F89")),
@@ -97,6 +169,24 @@ class LedgerRepository(context: Context) {
         book
     }
 
+    fun renameLedger(ledgerId: String, name: String): Boolean = synchronized(lock) {
+        val normalized = name.trim()
+        if (normalized.isEmpty()) {
+            return false
+        }
+        val index = ledgers.indexOfFirst { it.id == ledgerId }
+        if (index < 0) {
+            return false
+        }
+        val target = ledgers[index]
+        if (target.name == normalized) {
+            return false
+        }
+        ledgers[index] = target.copy(name = normalized)
+        persistLedgerState()
+        true
+    }
+
     fun deleteLedger(ledgerId: String): Boolean = synchronized(lock) {
         if (ledgers.size <= 1) {
             return false
@@ -161,7 +251,7 @@ class LedgerRepository(context: Context) {
                     DaySummary(
                         dateMillis = date.atStartOfDay(zoneId).toInstant().toEpochMilli(),
                         dayKey = date.toString(),
-                        label = date.format(getSectionDateFormatter()),
+                        label = formatSectionDate(date, includeYear = false),
                         income = income,
                         expense = expense,
                         transactions = bucket
@@ -219,7 +309,7 @@ class LedgerRepository(context: Context) {
                 DaySummary(
                     dateMillis = date.atStartOfDay(zoneId).toInstant().toEpochMilli(),
                     dayKey = date.toString(),
-                    label = date.format(getSectionDateFormatterWithYear()),
+                    label = formatSectionDate(date, includeYear = true),
                     income = income,
                     expense = expense,
                     transactions = bucket
@@ -277,7 +367,7 @@ class LedgerRepository(context: Context) {
                 DaySummary(
                     dateMillis = date.atStartOfDay(zoneId).toInstant().toEpochMilli(),
                     dayKey = date.toString(),
-                    label = date.format(getSectionDateFormatterWithYear()),
+                    label = formatSectionDate(date, includeYear = true),
                     income = income,
                     expense = expense,
                     transactions = bucket
@@ -509,7 +599,7 @@ class LedgerRepository(context: Context) {
     }
 
     fun refundTransaction(id: Long, refundAmount: Double) = synchronized(lock) {
-        require(refundAmount.isFinite() && refundAmount > 0.0) { "Refund amount must be a positive number." }
+        require(refundAmount.isFinite() && refundAmount >= 0.0) { "Refund amount must be a non-negative number." }
         require(BigDecimal.valueOf(refundAmount).scale() <= 2) { "Refund amount can have up to 2 decimal places." }
 
         val transactions = loadTransactionsInternal().toMutableList()
@@ -523,20 +613,24 @@ class LedgerRepository(context: Context) {
         }
 
         val originalAmount = current.originalExpenseAmount()
-        val maxRefundable = originalAmount - current.refundedAmount
-        if (refundAmount > maxRefundable + 1e-9) {
+        val maxRefundAmount = originalAmount.coerceAtLeast(0.0)
+        if (refundAmount > maxRefundAmount + 1e-9) {
             throw IllegalArgumentException("Refund amount cannot exceed original expense amount.")
         }
+        if (kotlin.math.abs(refundAmount - current.refundedAmount) <= 1e-9) {
+            return@synchronized
+        }
 
+        val updatedAmount = (originalAmount - refundAmount).coerceAtLeast(0.0)
         val cnyPerUnit = if (current.amount > 0.0) {
             current.amountCny / current.amount
         } else {
             current.currency.defaultRateToCny
         }
         val updated = current.copy(
-            amount = (current.amount - refundAmount).coerceAtLeast(0.0),
-            amountCny = (current.amountCny - (refundAmount * cnyPerUnit)).coerceAtLeast(0.0),
-            refundedAmount = current.refundedAmount + refundAmount
+            amount = updatedAmount,
+            amountCny = (updatedAmount * cnyPerUnit).coerceAtLeast(0.0),
+            refundedAmount = refundAmount
         )
         transactions[index] = updated
         persist(transactions)
@@ -572,8 +666,14 @@ class LedgerRepository(context: Context) {
     }
 
     fun getLastUsedCurrency(): CurrencyCode = synchronized(lock) {
-        prefs.getString(KEY_LAST_USED_CURRENCY, CurrencyCode.CNY.name)
-            .toCurrencyCodeOrDefault()
+        val stored = prefs.getString(KEY_LAST_USED_CURRENCY, null)
+            .toCurrencyCodeOrNull()
+        if (stored != null) {
+            return@synchronized stored
+        }
+        val inferred = inferDefaultCurrencyByCountry()
+        persistLastUsedCurrency(inferred)
+        inferred
     }
 
     fun getMonthlyBudget(month: YearMonth): Double? = synchronized(lock) {
@@ -1027,11 +1127,27 @@ class LedgerRepository(context: Context) {
             .apply()
     }
 
-    private fun String?.toCurrencyCodeOrDefault(): CurrencyCode {
-        val raw = this?.trim().orEmpty()
-        return CurrencyCode.values().firstOrNull {
-            it.name.equals(raw, ignoreCase = true) || it.code.equals(raw, ignoreCase = true)
-        } ?: CurrencyCode.CNY
+    private fun inferDefaultCurrencyByCountry(): CurrencyCode {
+        val locale = appContext.resources.configuration.locales[0] ?: Locale.getDefault()
+        val country = locale.country
+            .ifBlank { Locale.getDefault().country }
+            .uppercase(Locale.ROOT)
+        if (country.isBlank()) {
+            return CurrencyCode.USD
+        }
+        val regionLocale = Locale("", country)
+        val regionCurrencyCode = runCatching {
+            Currency.getInstance(regionLocale).currencyCode
+        }.getOrNull()
+        return CurrencyCode.fromCode(regionCurrencyCode) ?: CurrencyCode.USD
+    }
+
+    private fun String?.toCurrencyCodeOrNull(): CurrencyCode? {
+        return CurrencyCode.fromCode(this)
+    }
+
+    private fun String?.toCurrencyCodeOrDefault(default: CurrencyCode = CurrencyCode.CNY): CurrencyCode {
+        return toCurrencyCodeOrNull() ?: default
     }
 
     private fun String?.toLedgerBookTypeOrDefault(): LedgerBookType {

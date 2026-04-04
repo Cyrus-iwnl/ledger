@@ -11,6 +11,7 @@ import com.example.account.data.LedgerBook
 
 class LedgerBookAdapter(
     private val onLedgerClick: (LedgerBook) -> Unit,
+    private val onRenameClick: (LedgerBook) -> Unit,
     private val onDeleteClick: (LedgerBook) -> Unit
 ) : RecyclerView.Adapter<LedgerBookAdapter.ViewHolder>() {
 
@@ -33,7 +34,7 @@ class LedgerBookAdapter(
         val ledger = ledgers[position]
         val isCurrent = ledger.id == currentLedgerId
         val canDelete = ledgers.size > 1
-        holder.bind(ledger, isCurrent, canDelete, onLedgerClick, onDeleteClick)
+        holder.bind(ledger, isCurrent, canDelete, onLedgerClick, onRenameClick, onDeleteClick)
     }
 
     override fun getItemCount(): Int = ledgers.size
@@ -42,6 +43,7 @@ class LedgerBookAdapter(
         private val row: View = itemView.findViewById(R.id.ledger_row)
         private val nameText: TextView = itemView.findViewById(R.id.ledger_name_text)
         private val currentTagText: TextView = itemView.findViewById(R.id.current_tag_text)
+        private val renameButton: ImageButton = itemView.findViewById(R.id.rename_button)
         private val deleteButton: ImageButton = itemView.findViewById(R.id.delete_button)
 
         fun bind(
@@ -49,6 +51,7 @@ class LedgerBookAdapter(
             isCurrent: Boolean,
             canDelete: Boolean,
             onLedgerClick: (LedgerBook) -> Unit,
+            onRenameClick: (LedgerBook) -> Unit,
             onDeleteClick: (LedgerBook) -> Unit
         ) {
             nameText.text = ledger.name
@@ -56,6 +59,9 @@ class LedgerBookAdapter(
             deleteButton.isEnabled = canDelete
             deleteButton.alpha = if (canDelete) 1f else 0.35f
             row.setOnClickListener { onLedgerClick(ledger) }
+            renameButton.setOnClickListener {
+                onRenameClick(ledger)
+            }
             deleteButton.setOnClickListener {
                 if (canDelete) {
                     onDeleteClick(ledger)
