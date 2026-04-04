@@ -52,7 +52,26 @@ data class InsightsText(
     val alreadyOverAnnualBudget: String,
     val overOn: String,
     val overIn: String,
-    val weekdays: List<String>
+    val weekdays: List<String>,
+    val insightModuleTitle: String,
+    val insightSummaryFallback: String,
+    val insightAllScopeHint: String,
+    val insightSuggestionTitle: String,
+    val insightStatusStable: String,
+    val insightStatusAttention: String,
+    val insightStatusRisk: String,
+    val insightStatusImproving: String,
+    val insightTypeSummary: String,
+    val insightTypeRisk: String,
+    val insightTypeAnomaly: String,
+    val insightTypeHabit: String,
+    val insightTypeSuggestion: String,
+    val insightActionTrend: String,
+    val insightActionCategory: String,
+    val insightActionCalendar: String,
+    val insightSummaryRiskTemplate: String,
+    val insightSummaryAttentionTemplate: String,
+    val insightSummaryStableTemplate: String
 ) {
     fun format(template: String, params: Map<String, Any>): String {
         var result = template
@@ -132,7 +151,26 @@ fun insightsText(localeTag: String): InsightsText {
             alreadyOverAnnualBudget = "已超年度预算",
             overOn = "{label} 超预算",
             overIn = "{label} 超预算",
-            weekdays = listOf("一", "二", "三", "四", "五", "六", "日")
+            weekdays = listOf("一", "二", "三", "四", "五", "六", "日"),
+            insightModuleTitle = "数据洞察",
+            insightSummaryFallback = "本期暂无明显异常，整体较平稳。",
+            insightAllScopeHint = "请切换到月/年查看洞察。",
+            insightSuggestionTitle = "建议",
+            insightStatusStable = "平稳",
+            insightStatusAttention = "注意",
+            insightStatusRisk = "风险",
+            insightStatusImproving = "改善中",
+            insightTypeSummary = "变化",
+            insightTypeRisk = "风险",
+            insightTypeAnomaly = "异常",
+            insightTypeHabit = "习惯",
+            insightTypeSuggestion = "建议",
+            insightActionTrend = "查看趋势",
+            insightActionCategory = "查看分类",
+            insightActionCalendar = "查看日历",
+            insightSummaryRiskTemplate = "本期识别到 {count} 条重点洞察，存在风险项，建议优先处理。",
+            insightSummaryAttentionTemplate = "本期识别到 {count} 条重点洞察，建议按优先级逐项查看。",
+            insightSummaryStableTemplate = "本期暂无明显风险，已识别 {count} 条一般洞察。"
         )
         "zh-TW" -> InsightsText(
             insightsTitle = "統計",
@@ -184,7 +222,26 @@ fun insightsText(localeTag: String): InsightsText {
             alreadyOverAnnualBudget = "已超年度預算",
             overOn = "{label} 超預算",
             overIn = "{label} 超預算",
-            weekdays = listOf("一", "二", "三", "四", "五", "六", "日")
+            weekdays = listOf("一", "二", "三", "四", "五", "六", "日"),
+            insightModuleTitle = "資料洞察",
+            insightSummaryFallback = "本期暫無明顯異常，整體較平穩。",
+            insightAllScopeHint = "請切換到月/年查看洞察。",
+            insightSuggestionTitle = "建議",
+            insightStatusStable = "平穩",
+            insightStatusAttention = "注意",
+            insightStatusRisk = "風險",
+            insightStatusImproving = "改善中",
+            insightTypeSummary = "變化",
+            insightTypeRisk = "風險",
+            insightTypeAnomaly = "異常",
+            insightTypeHabit = "習慣",
+            insightTypeSuggestion = "建議",
+            insightActionTrend = "查看趨勢",
+            insightActionCategory = "查看分類",
+            insightActionCalendar = "查看日曆",
+            insightSummaryRiskTemplate = "本期識別到 {count} 條重點洞察，存在風險項，建議優先處理。",
+            insightSummaryAttentionTemplate = "本期識別到 {count} 條重點洞察，建議按優先級逐項查看。",
+            insightSummaryStableTemplate = "本期暫無明顯風險，已識別 {count} 條一般洞察。"
         )
         else -> InsightsText(
             insightsTitle = "Insights",
@@ -236,7 +293,26 @@ fun insightsText(localeTag: String): InsightsText {
             alreadyOverAnnualBudget = "Already over annual budget",
             overOn = "Over on {label}",
             overIn = "Over in {label}",
-            weekdays = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+            weekdays = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"),
+            insightModuleTitle = "Data Insights",
+            insightSummaryFallback = "No major anomalies in this period.",
+            insightAllScopeHint = "Switch to month/year to view insights.",
+            insightSuggestionTitle = "Suggestion",
+            insightStatusStable = "Stable",
+            insightStatusAttention = "Attention",
+            insightStatusRisk = "Risk",
+            insightStatusImproving = "Improving",
+            insightTypeSummary = "Summary",
+            insightTypeRisk = "Risk",
+            insightTypeAnomaly = "Anomaly",
+            insightTypeHabit = "Habit",
+            insightTypeSuggestion = "Suggestion",
+            insightActionTrend = "View trend",
+            insightActionCategory = "View category",
+            insightActionCalendar = "View calendar",
+            insightSummaryRiskTemplate = "{count} key insights detected, including risk items. Prioritize them first.",
+            insightSummaryAttentionTemplate = "{count} key insights detected. Review them by priority.",
+            insightSummaryStableTemplate = "No obvious risks this period. {count} general insights detected."
         )
     }
 }

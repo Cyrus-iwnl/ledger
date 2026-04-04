@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/insight_rule_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <TextView
+        android:id="@+id/insight_rule_type"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/inter_family"
+        android:includeFontPadding="false"
+        android:text="RISK"
+        android:textAllCaps="true"
+        android:textColor="@color/insights_on_surface_variant"
+        android:textFontWeight="700"
+        android:textSize="10sp"
+        android:letterSpacing="0.08" />
+
+    <TextView
+        android:id="@+id/insight_rule_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:fontFamily="@font/manrope_family"
+        android:includeFontPadding="false"
+        android:text="Title"
+        android:textColor="@color/insights_on_surface"
+        android:textFontWeight="700"
+        android:textSize="15sp" />
+
+    <TextView
+        android:id="@+id/insight_rule_body"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:fontFamily="@font/inter_family"
+        android:includeFontPadding="false"
+        android:text="Body"
+        android:textColor="@color/insights_on_surface_variant"
+        android:textSize="12sp" />
+
+</LinearLayout>

@@ -16,6 +16,9 @@
     <color name="insights_red_200">#FCA5A5</color>
     <color name="insights_red_400">#F87171</color>
     <color name="insights_red_500">#EF4444</color>
+    <color name="insights_amber_50">#FFFBEB</color>
+    <color name="insights_amber_200">#FDE68A</color>
+    <color name="insights_amber_600">#D97706</color>
     <color name="insights_green_50">#F0FDF4</color>
     <color name="insights_green_100">#DCFCE7</color>
     <color name="insights_green_200">#86EFAC</color>

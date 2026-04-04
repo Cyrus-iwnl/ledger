@@ -674,8 +674,10 @@ class LedgerRepository(context: Context) {
                 merged = merged + appended
             }
 
-            appendMonthIfMissing(YearMonth.of(2026, 3))
-            appendMonthIfMissing(YearMonth.of(2025, 4))
+            val seedMonths = seed.map {
+                YearMonth.from(java.time.Instant.ofEpochMilli(it.timestampMillis).atZone(zoneId))
+            }.distinct()
+            seedMonths.forEach(::appendMonthIfMissing)
 
             if (merged.size != existing.size) {
                 persist(merged, SAMPLE_LEDGER_ID)
@@ -802,7 +804,115 @@ class LedgerRepository(context: Context) {
             LedgerTransaction(56, TransactionType.EXPENSE, "expense_medical", 65.0, "Medical", atDate(2025, 4, 20, 14, 30)),
             LedgerTransaction(57, TransactionType.INCOME, "income_other", 3800.0, "Freelance", atDate(2025, 4, 23, 20, 0)),
             LedgerTransaction(58, TransactionType.EXPENSE, "expense_digital", 55.0, "Subscription", atDate(2025, 4, 27, 9, 20)),
-            LedgerTransaction(59, TransactionType.EXPENSE, "expense_fun", 90.0, "Entertainment", atDate(2025, 4, 29, 21, 0))
+            LedgerTransaction(59, TransactionType.EXPENSE, "expense_fun", 90.0, "Entertainment", atDate(2025, 4, 29, 21, 0)),
+
+            // 2026-01: baseline month, balanced spending
+            LedgerTransaction(60, TransactionType.INCOME, "income_salary", 7800.0, "Salary", atDate(2026, 1, 2, 10, 0)),
+            LedgerTransaction(61, TransactionType.INCOME, "income_bonus", 1200.0, "Performance bonus", atDate(2026, 1, 18, 11, 0)),
+            LedgerTransaction(62, TransactionType.EXPENSE, "expense_home", 1800.0, "Rent", atDate(2026, 1, 3, 9, 0)),
+            LedgerTransaction(63, TransactionType.EXPENSE, "expense_meals", 620.0, "Meals total", atDate(2026, 1, 12, 19, 30)),
+            LedgerTransaction(64, TransactionType.EXPENSE, "expense_transport", 260.0, "Transit and taxi", atDate(2026, 1, 15, 8, 50)),
+            LedgerTransaction(65, TransactionType.EXPENSE, "expense_utility", 240.0, "Utilities", atDate(2026, 1, 20, 20, 0)),
+            LedgerTransaction(66, TransactionType.EXPENSE, "expense_digital", 120.0, "Cloud and apps", atDate(2026, 1, 22, 9, 20)),
+            LedgerTransaction(67, TransactionType.EXPENSE, "expense_fun", 500.0, "Weekend entertainment", atDate(2026, 1, 26, 21, 10)),
+
+            // 2026-02: lower expense month
+            LedgerTransaction(68, TransactionType.INCOME, "income_salary", 7800.0, "Salary", atDate(2026, 2, 2, 10, 0)),
+            LedgerTransaction(69, TransactionType.INCOME, "income_other", 600.0, "Freelance", atDate(2026, 2, 16, 14, 20)),
+            LedgerTransaction(70, TransactionType.EXPENSE, "expense_home", 1800.0, "Rent", atDate(2026, 2, 3, 9, 0)),
+            LedgerTransaction(71, TransactionType.EXPENSE, "expense_meals", 420.0, "Meals total", atDate(2026, 2, 10, 19, 20)),
+            LedgerTransaction(72, TransactionType.EXPENSE, "expense_transport", 180.0, "Metro and rides", atDate(2026, 2, 11, 9, 10)),
+            LedgerTransaction(73, TransactionType.EXPENSE, "expense_daily", 260.0, "Groceries", atDate(2026, 2, 18, 18, 30)),
+            LedgerTransaction(74, TransactionType.EXPENSE, "expense_digital", 88.0, "Subscriptions", atDate(2026, 2, 22, 9, 40)),
+            LedgerTransaction(75, TransactionType.EXPENSE, "expense_fun", 190.0, "Movie and games", atDate(2026, 2, 23, 20, 40)),
+
+            // 2026-05: high-spend anomaly month with travel spike and large transaction
+            LedgerTransaction(76, TransactionType.INCOME, "income_salary", 7800.0, "Salary", atDate(2026, 5, 2, 10, 0)),
+            LedgerTransaction(77, TransactionType.INCOME, "income_other", 1200.0, "Freelance", atDate(2026, 5, 21, 20, 0)),
+            LedgerTransaction(78, TransactionType.EXPENSE, "expense_home", 1800.0, "Rent", atDate(2026, 5, 3, 9, 0)),
+            LedgerTransaction(79, TransactionType.EXPENSE, "expense_travel", 3200.0, "Flight and hotel bundle", atDate(2026, 5, 9, 19, 45)),
+            LedgerTransaction(80, TransactionType.EXPENSE, "expense_meals", 920.0, "Dining out", atDate(2026, 5, 14, 20, 20)),
+            LedgerTransaction(81, TransactionType.EXPENSE, "expense_fun", 620.0, "Events and entertainment", atDate(2026, 5, 17, 21, 10)),
+            LedgerTransaction(82, TransactionType.EXPENSE, "expense_transport", 410.0, "Taxi and rail", atDate(2026, 5, 19, 8, 20)),
+            LedgerTransaction(83, TransactionType.EXPENSE, "expense_digital", 150.0, "Annual subscription", atDate(2026, 5, 25, 11, 10)),
+
+            // 2026-06: improved month after high spend
+            LedgerTransaction(84, TransactionType.INCOME, "income_salary", 7800.0, "Salary", atDate(2026, 6, 2, 10, 0)),
+            LedgerTransaction(85, TransactionType.INCOME, "income_investment", 700.0, "Fund dividend", atDate(2026, 6, 20, 10, 30)),
+            LedgerTransaction(86, TransactionType.EXPENSE, "expense_home", 1800.0, "Rent", atDate(2026, 6, 3, 9, 0)),
+            LedgerTransaction(87, TransactionType.EXPENSE, "expense_meals", 520.0, "Meals total", atDate(2026, 6, 10, 19, 0)),
+            LedgerTransaction(88, TransactionType.EXPENSE, "expense_transport", 220.0, "Transport", atDate(2026, 6, 12, 8, 50)),
+            LedgerTransaction(89, TransactionType.EXPENSE, "expense_daily", 280.0, "Household", atDate(2026, 6, 16, 18, 20)),
+            LedgerTransaction(90, TransactionType.EXPENSE, "expense_fun", 260.0, "Weekend recreation", atDate(2026, 6, 21, 21, 0)),
+            LedgerTransaction(91, TransactionType.EXPENSE, "expense_digital", 90.0, "Subscriptions", atDate(2026, 6, 26, 9, 30)),
+
+            // 2025-Q4: richer prior-year context for yearly insights
+            LedgerTransaction(92, TransactionType.INCOME, "income_salary", 7600.0, "Salary", atDate(2025, 10, 2, 10, 0)),
+            LedgerTransaction(93, TransactionType.EXPENSE, "expense_home", 1750.0, "Rent", atDate(2025, 10, 3, 9, 0)),
+            LedgerTransaction(94, TransactionType.EXPENSE, "expense_meals", 560.0, "Meals", atDate(2025, 10, 12, 19, 30)),
+            LedgerTransaction(95, TransactionType.EXPENSE, "expense_transport", 210.0, "Transport", atDate(2025, 10, 18, 8, 40)),
+            LedgerTransaction(96, TransactionType.EXPENSE, "expense_daily", 300.0, "Groceries", atDate(2025, 10, 21, 18, 20)),
+            LedgerTransaction(97, TransactionType.INCOME, "income_other", 900.0, "Freelance", atDate(2025, 10, 25, 20, 0)),
+
+            LedgerTransaction(98, TransactionType.INCOME, "income_salary", 7600.0, "Salary", atDate(2025, 11, 2, 10, 0)),
+            LedgerTransaction(99, TransactionType.EXPENSE, "expense_home", 1750.0, "Rent", atDate(2025, 11, 3, 9, 0)),
+            LedgerTransaction(100, TransactionType.EXPENSE, "expense_meals", 590.0, "Meals", atDate(2025, 11, 9, 19, 0)),
+            LedgerTransaction(101, TransactionType.EXPENSE, "expense_transport", 230.0, "Transport", atDate(2025, 11, 15, 8, 30)),
+            LedgerTransaction(102, TransactionType.EXPENSE, "expense_fun", 340.0, "Entertainment", atDate(2025, 11, 22, 21, 10)),
+            LedgerTransaction(103, TransactionType.INCOME, "income_bonus", 1400.0, "Quarter bonus", atDate(2025, 11, 28, 11, 20)),
+
+            LedgerTransaction(104, TransactionType.INCOME, "income_salary", 7600.0, "Salary", atDate(2025, 12, 2, 10, 0)),
+            LedgerTransaction(105, TransactionType.EXPENSE, "expense_home", 1750.0, "Rent", atDate(2025, 12, 3, 9, 0)),
+            LedgerTransaction(106, TransactionType.EXPENSE, "expense_meals", 680.0, "Holiday meals", atDate(2025, 12, 10, 19, 40)),
+            LedgerTransaction(107, TransactionType.EXPENSE, "expense_gifts", 520.0, "Holiday gifts", atDate(2025, 12, 18, 20, 10)),
+            LedgerTransaction(108, TransactionType.EXPENSE, "expense_transport", 260.0, "Travel home", atDate(2025, 12, 20, 9, 20)),
+            LedgerTransaction(109, TransactionType.INCOME, "income_other", 1100.0, "Year-end freelance", atDate(2025, 12, 27, 16, 0)),
+
+            // 2025-05: conservative month
+            LedgerTransaction(110, TransactionType.INCOME, "income_salary", 7600.0, "Salary", atDate(2025, 5, 2, 10, 0)),
+            LedgerTransaction(111, TransactionType.INCOME, "income_other", 500.0, "Freelance", atDate(2025, 5, 20, 16, 0)),
+            LedgerTransaction(112, TransactionType.EXPENSE, "expense_home", 1750.0, "Rent", atDate(2025, 5, 3, 9, 0)),
+            LedgerTransaction(113, TransactionType.EXPENSE, "expense_meals", 420.0, "Meals", atDate(2025, 5, 11, 19, 30)),
+            LedgerTransaction(114, TransactionType.EXPENSE, "expense_transport", 180.0, "Transport", atDate(2025, 5, 15, 8, 40)),
+            LedgerTransaction(115, TransactionType.EXPENSE, "expense_daily", 220.0, "Groceries", atDate(2025, 5, 18, 18, 20)),
+            LedgerTransaction(116, TransactionType.EXPENSE, "expense_digital", 80.0, "Subscriptions", atDate(2025, 5, 24, 9, 30)),
+
+            // 2025-06: medical spike month
+            LedgerTransaction(117, TransactionType.INCOME, "income_salary", 7600.0, "Salary", atDate(2025, 6, 2, 10, 0)),
+            LedgerTransaction(118, TransactionType.INCOME, "income_bonus", 800.0, "Bonus", atDate(2025, 6, 26, 11, 0)),
+            LedgerTransaction(119, TransactionType.EXPENSE, "expense_home", 1750.0, "Rent", atDate(2025, 6, 3, 9, 0)),
+            LedgerTransaction(120, TransactionType.EXPENSE, "expense_medical", 980.0, "Dental care", atDate(2025, 6, 8, 14, 10)),
+            LedgerTransaction(121, TransactionType.EXPENSE, "expense_meals", 430.0, "Meals", atDate(2025, 6, 12, 19, 0)),
+            LedgerTransaction(122, TransactionType.EXPENSE, "expense_transport", 190.0, "Transport", atDate(2025, 6, 17, 8, 20)),
+            LedgerTransaction(123, TransactionType.EXPENSE, "expense_utility", 240.0, "Utilities", atDate(2025, 6, 21, 20, 0)),
+
+            // 2025-07: weekend-heavy fun and travel month
+            LedgerTransaction(124, TransactionType.INCOME, "income_salary", 7600.0, "Salary", atDate(2025, 7, 2, 10, 0)),
+            LedgerTransaction(125, TransactionType.INCOME, "income_other", 700.0, "Freelance", atDate(2025, 7, 25, 16, 20)),
+            LedgerTransaction(126, TransactionType.EXPENSE, "expense_home", 1750.0, "Rent", atDate(2025, 7, 3, 9, 0)),
+            LedgerTransaction(127, TransactionType.EXPENSE, "expense_fun", 760.0, "Weekend events", atDate(2025, 7, 12, 20, 30)),
+            LedgerTransaction(128, TransactionType.EXPENSE, "expense_travel", 1180.0, "Short trip", atDate(2025, 7, 19, 10, 10)),
+            LedgerTransaction(129, TransactionType.EXPENSE, "expense_meals", 500.0, "Meals", atDate(2025, 7, 20, 19, 20)),
+            LedgerTransaction(130, TransactionType.EXPENSE, "expense_transport", 220.0, "Transport", atDate(2025, 7, 22, 8, 50)),
+
+            // 2025-08: savings rebound month
+            LedgerTransaction(131, TransactionType.INCOME, "income_salary", 7600.0, "Salary", atDate(2025, 8, 2, 10, 0)),
+            LedgerTransaction(132, TransactionType.INCOME, "income_investment", 1500.0, "Fund dividend", atDate(2025, 8, 27, 10, 40)),
+            LedgerTransaction(133, TransactionType.EXPENSE, "expense_home", 1750.0, "Rent", atDate(2025, 8, 3, 9, 0)),
+            LedgerTransaction(134, TransactionType.EXPENSE, "expense_daily", 180.0, "Groceries", atDate(2025, 8, 10, 18, 0)),
+            LedgerTransaction(135, TransactionType.EXPENSE, "expense_meals", 360.0, "Meals", atDate(2025, 8, 14, 19, 0)),
+            LedgerTransaction(136, TransactionType.EXPENSE, "expense_transport", 170.0, "Transport", atDate(2025, 8, 16, 8, 20)),
+            LedgerTransaction(137, TransactionType.EXPENSE, "expense_digital", 85.0, "Subscriptions", atDate(2025, 8, 20, 9, 30)),
+
+            // 2025-09: digital and learning spike month
+            LedgerTransaction(138, TransactionType.INCOME, "income_salary", 7600.0, "Salary", atDate(2025, 9, 2, 10, 0)),
+            LedgerTransaction(139, TransactionType.INCOME, "income_bonus", 1200.0, "Quarter bonus", atDate(2025, 9, 26, 11, 10)),
+            LedgerTransaction(140, TransactionType.EXPENSE, "expense_home", 1750.0, "Rent", atDate(2025, 9, 3, 9, 0)),
+            LedgerTransaction(141, TransactionType.EXPENSE, "expense_digital", 980.0, "Device upgrade", atDate(2025, 9, 9, 21, 0)),
+            LedgerTransaction(142, TransactionType.EXPENSE, "expense_learn", 620.0, "Course bundle", atDate(2025, 9, 14, 20, 10)),
+            LedgerTransaction(143, TransactionType.EXPENSE, "expense_meals", 470.0, "Meals", atDate(2025, 9, 19, 19, 20)),
+            LedgerTransaction(144, TransactionType.EXPENSE, "expense_transport", 210.0, "Transport", atDate(2025, 9, 22, 8, 40)),
+            LedgerTransaction(145, TransactionType.EXPENSE, "expense_gifts", 430.0, "Festival gifts", atDate(2025, 9, 28, 20, 30))
         )
     }
 

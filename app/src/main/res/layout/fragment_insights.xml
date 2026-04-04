@@ -566,62 +566,64 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <TextView
-                        android:id="@+id/insights_metrics_title"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="12dp"
-                        android:fontFamily="@font/manrope_family"
-                        android:includeFontPadding="false"
-                        android:text="Metrics"
-                        android:textColor="@color/insights_on_surface"
-                        android:textFontWeight="700"
-                        android:textSize="18sp" />
-
                     <LinearLayout
-                        android:id="@+id/insights_metric_anomaly_card"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:minHeight="116dp"
-                        android:orientation="vertical"
-                        android:padding="12dp">
+                        android:layout_marginBottom="10dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
 
                         <TextView
-                            android:id="@+id/insights_metric_anomaly_label"
-                            android:layout_width="wrap_content"
+                            android:id="@+id/insights_metrics_title"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:fontFamily="@font/inter_family"
-                            android:includeFontPadding="false"
-                            android:text="Anomaly"
-                            android:textAllCaps="true"
-                            android:textColor="@color/insights_on_surface_variant"
-                            android:textFontWeight="700"
-                            android:textSize="10sp"
-                            android:letterSpacing="0.1" />
-
-                        <TextView
-                            android:id="@+id/insights_metric_anomaly_value"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
+                            android:layout_weight="1"
                             android:fontFamily="@font/manrope_family"
                             android:includeFontPadding="false"
-                            android:text="0 tx"
+                            android:text="Data Insights"
                             android:textColor="@color/insights_on_surface"
-                            android:textFontWeight="800"
+                            android:textFontWeight="700"
                             android:textSize="18sp" />
 
-                        <TextView
-                            android:id="@+id/insights_metric_anomaly_sub"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:fontFamily="@font/inter_family"
+                        <com.example.account.ui.insights.MaterialSymbolTextView
+                            android:id="@+id/insights_metrics_help"
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:foreground="?attr/selectableItemBackgroundBorderless"
+                            android:gravity="center"
                             android:includeFontPadding="false"
-                            android:text="No obvious anomalies"
+                            android:text="help"
                             android:textColor="@color/insights_on_surface_variant"
-                            android:textSize="10sp" />
+                            android:textSize="16sp" />
                     </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/insights_primary_insight_list"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+
+                    <TextView
+                        android:id="@+id/insights_suggestion_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:fontFamily="@font/inter_family"
+                        android:includeFontPadding="false"
+                        android:text="Suggestion"
+                        android:textColor="@color/insights_on_surface_variant"
+                        android:textFontWeight="700"
+                        android:textSize="11sp"
+                        android:textAllCaps="true"
+                        android:letterSpacing="0.08" />
+
+                    <FrameLayout
+                        android:id="@+id/insights_suggestion_container"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
             <com.google.android.material.card.MaterialCardView

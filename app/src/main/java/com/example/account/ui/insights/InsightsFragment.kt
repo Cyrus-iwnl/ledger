@@ -34,8 +34,11 @@ import com.example.account.data.LedgerTransaction
 import com.example.account.data.LedgerViewModel
 import com.example.account.data.TransactionType
 import com.example.account.databinding.FragmentInsightsBinding
+import com.example.account.databinding.ItemInsightRuleBinding
 import com.example.account.databinding.ItemInsightsCategoryBinding
+import com.example.account.ui.DialogFactory
 import com.example.account.ui.period.PeriodPickerDialogFragment
+import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -48,7 +51,6 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.math.RoundingMode
-import java.util.Currency
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.ceil
@@ -185,7 +187,7 @@ class InsightsFragment : Fragment() {
             uiState = uiState.copy(selectedBarIndex = null)
         }
         renderSummary(currentSummary, previousSummary, currentTransactions)
-        renderMetrics(currentTransactions, previousTransactions)
+        renderInsightsPanel(index, currentTransactions)
         renderTrend(buckets)
         renderCategories(currentTransactions)
         renderCalendar(currentTransactions)
@@ -199,9 +201,9 @@ class InsightsFragment : Fragment() {
         binding.insightsExpenseLabel.text = forceTwoLineLabel(text.totalExpense)
         binding.insightsIncomeLabel.text = forceTwoLineLabel(text.totalIncome)
         binding.insightsBalanceSavingsRateLabel.text = text.savingsRate
-        binding.insightsMetricsTitle.text = text.anomaly
-        binding.insightsMetricAnomalyLabel.text = text.anomaly
-        binding.insightsMetricAnomalySub.text = text.noObviousAnomalies
+        binding.insightsMetricsTitle.text = text.insightModuleTitle
+        binding.insightsMetricsHelp.contentDescription = insightHelpButtonLabel()
+        binding.insightsSuggestionTitle.text = text.insightSuggestionTitle
         binding.insightsTrendTitle.text = text.trend
         binding.insightsTrendMetricExpense.text = text.expense
         binding.insightsTrendMetricIncome.text = text.income
@@ -237,8 +239,6 @@ class InsightsFragment : Fragment() {
         background(binding.insightsExpenseProgressTrack.getChildAt(0), ColorUtils.setAlphaComponent(red400, 51), 999f)
         background(binding.insightsIncomeProgressTrack.getChildAt(0), ColorUtils.setAlphaComponent(green500, 51), 999f)
 
-        background(binding.insightsMetricAnomalyCard, white, 16f, ColorUtils.setAlphaComponent(surfaceVariant, 64))
-
         listOf(
             binding.insightsTrendMetricGroup,
             binding.insightsCategoryTypeGroup,
@@ -262,6 +262,7 @@ class InsightsFragment : Fragment() {
             parentFragmentManager.popBackStack()
         }
         binding.insightsPageTitle.setOnClickListener { openPeriodPicker() }
+        binding.insightsMetricsHelp.setOnClickListener { showInsightHelpDialog() }
         binding.insightsTrendMetricExpense.setOnClickListener {
             uiState = uiState.copy(trendMetric = InsightsMetric.EXPENSE)
             render()
@@ -528,24 +529,471 @@ class InsightsFragment : Fragment() {
             sizeSp -= 0.5f
         }
     }
-    private fun renderMetrics(
-        currentTransactions: List<IndexedTransaction>,
-        previousTransactions: List<IndexedTransaction>
+
+    private fun renderInsightsPanel(
+        index: TransactionIndex,
+        currentTransactions: List<IndexedTransaction>
     ) {
-        val anomalies = detectExpenseAnomalies(currentTransactions, previousTransactions)
-        binding.insightsMetricAnomalyValue.text = text.format(text.txCount, mapOf("count" to anomalies.size))
-        binding.insightsMetricAnomalySub.text = if (anomalies.isEmpty()) {
-            text.noObviousAnomalies
-        } else {
-            val top = anomalies.first()
-            val uplift = if (top.baseline > 0.0) {
-                text.format(text.aboveBaseline, mapOf("percent" to (((top.amount / top.baseline) - 1) * 100).roundToInt()))
-            } else {
-                text.highAmountAlert
+        val month = YearMonth.of(uiState.year, uiState.monthIndex + 1)
+        val context = InsightContext(
+            granularity = uiState.granularity,
+            year = uiState.year,
+            monthIndex = uiState.monthIndex,
+            now = LocalDate.now(),
+            transactionsCurrent = currentTransactions.map { it.toRuleTransaction() },
+            allTransactions = index.transactions.map { it.toRuleTransaction() },
+            monthlyBudget = if (uiState.granularity == InsightsGranularity.MONTH) viewModel.getMonthlyBudget(month) else null,
+            yearlyBudget = if (uiState.granularity == InsightsGranularity.YEAR) viewModel.getYearlyBudget(uiState.year) else null
+        )
+        val panel = InsightsRuleEngine.evaluate(context)
+        val primaryCards = panel.primaryInsights.map { toInsightCard(it) }
+
+        binding.insightsPrimaryInsightList.removeAllViews()
+        binding.insightsSuggestionContainer.removeAllViews()
+        binding.insightsSuggestionTitle.isVisible = false
+        binding.insightsSuggestionContainer.isVisible = false
+
+        if (panel.allScopeHint) {
+            binding.insightsPrimaryInsightList.addView(
+                createInsightCard(
+                    card = InsightCard(
+                        type = InsightType.SUMMARY,
+                        typeLabel = "",
+                        title = text.noData,
+                        body = text.insightAllScopeHint,
+                        keyNumber = "",
+                        action = InsightAction.NONE,
+                        actionLabel = "",
+                        categoryId = null
+                    ),
+                    showTypeTag = false
+                )
+            )
+            return
+        }
+
+        if (currentTransactions.isEmpty()) {
+            binding.insightsPrimaryInsightList.addView(
+                createInsightCard(
+                    card = InsightCard(
+                        type = InsightType.SUMMARY,
+                        typeLabel = "",
+                        title = text.noData,
+                        body = emptyInsightsHintBody(),
+                        keyNumber = "",
+                        action = InsightAction.NONE,
+                        actionLabel = "",
+                        categoryId = null
+                    ),
+                    showTypeTag = false
+                )
+            )
+            return
+        }
+
+        primaryCards.forEachIndexed { index, card ->
+            val cardView = createInsightCard(card)
+            cardView.layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                if (index < primaryCards.lastIndex) {
+                    bottomMargin = dpInt(8)
+                }
             }
-            "${top.categoryName} ${compactMoney(top.amount)}\n$uplift"
+            binding.insightsPrimaryInsightList.addView(cardView)
+        }
+
+        if (primaryCards.isEmpty()) {
+            binding.insightsPrimaryInsightList.addView(
+                createInsightCard(
+                    card = InsightCard(
+                        type = InsightType.SUMMARY,
+                        typeLabel = "",
+                        title = text.noObviousAnomalies,
+                        body = noRuleHitHintBody(),
+                        keyNumber = "",
+                        action = InsightAction.NONE,
+                        actionLabel = "",
+                        categoryId = null
+                    ),
+                    showTypeTag = false
+                )
+            )
         }
     }
+
+    private fun emptyInsightsHintBody(): String {
+        return when (localeTag) {
+            "zh-CN" -> if (uiState.granularity == InsightsGranularity.YEAR) {
+                "\u672C\u5E74\u6682\u65E0\u8D26\u5355\u6570\u636E\uFF0C\u8BB0\u4E00\u7B14\u540E\u5373\u53EF\u751F\u6210\u6D1E\u5BDF\u3002"
+            } else {
+                "\u672C\u6708\u6682\u65E0\u8D26\u5355\u6570\u636E\uFF0C\u8BB0\u4E00\u7B14\u540E\u5373\u53EF\u751F\u6210\u6D1E\u5BDF\u3002"
+            }
+            "zh-TW" -> if (uiState.granularity == InsightsGranularity.YEAR) {
+                "\u672C\u5E74\u66AB\u7121\u5E33\u55AE\u8CC7\u6599\uFF0C\u8A18\u4E00\u7B46\u5F8C\u5373\u53EF\u7522\u751F\u6D1E\u5BDF\u3002"
+            } else {
+                "\u672C\u6708\u66AB\u7121\u5E33\u55AE\u8CC7\u6599\uFF0C\u8A18\u4E00\u7B46\u5F8C\u5373\u53EF\u7522\u751F\u6D1E\u5BDF\u3002"
+            }
+            else -> if (uiState.granularity == InsightsGranularity.YEAR) {
+                "No records this year yet. Add transactions to generate insights."
+            } else {
+                "No records this month yet. Add transactions to generate insights."
+            }
+        }
+    }
+
+    private fun noRuleHitHintBody(): String {
+        return when (localeTag) {
+            "zh-CN" -> "\u5F53\u524D\u5468\u671F\u672A\u5339\u914D\u5230\u89C4\u5219\u6216\u5EFA\u8BAE\uFF0C\u7EE7\u7EED\u8BB0\u8D26\u540E\u518D\u67E5\u770B\u3002"
+            "zh-TW" -> "\u76EE\u524D\u9031\u671F\u672A\u5339\u914D\u5230\u898F\u5247\u6216\u5EFA\u8B70\uFF0C\u6301\u7E8C\u8A18\u5E33\u5F8C\u518D\u67E5\u770B\u3002"
+            else -> "No rules or suggestions matched for this period yet."
+        }
+    }
+
+    private fun insightHelpButtonLabel(): String {
+        return when (localeTag) {
+            "zh-CN" -> "\u6D1E\u5BDF\u8BF4\u660E"
+            "zh-TW" -> "\u6D1E\u5BDF\u8AAA\u660E"
+            else -> "Insight help"
+        }
+    }
+
+    private fun showInsightHelpDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_insight_help, null, false)
+        val titleText = dialogView.findViewById<TextView>(R.id.help_title_text)
+        val descriptionText = dialogView.findViewById<TextView>(R.id.help_description_text)
+        val closeButton = dialogView.findViewById<MaterialButton>(R.id.close_button)
+
+        val title = when (localeTag) {
+            "zh-CN" -> "\u6570\u636E\u6D1E\u5BDF\u8BF4\u660E"
+            "zh-TW" -> "\u8CC7\u6599\u6D1E\u5BDF\u8AAA\u660E"
+            else -> "About Data Insights"
+        }
+        val message = when (localeTag) {
+            "zh-CN" -> "\u6570\u636E\u6D1E\u5BDF\u4F1A\u57FA\u4E8E\u5F53\u524D\u5468\u671F\u7684\u6536\u652F\u8BB0\u5F55\uFF0C\u81EA\u52A8\u63D0\u70BC\u6700\u503C\u5F97\u5173\u6CE8\u7684\u53D8\u5316\uFF0C\u5E2E\u4F60\u66F4\u5FEB\u53D1\u73B0\u95EE\u9898\u3002\n\n\u7C7B\u578B\u8BF4\u660E\uFF1A\n\u2022 \u53D8\u5316\uff08Summary\uff09\uFF1A\u76F8\u6BD4\u4E0A\u671F\u51FA\u73B0\u660E\u663E\u53D8\u5316\n\u2022 \u98CE\u9669\uff08Risk\uff09\uFF1A\u6309\u5F53\u524D\u8D8B\u52BF\u53EF\u80FD\u51FA\u73B0\u8D85\u652F\u6216\u7ED3\u4F59\u4E0B\u6ED1\n\u2022 \u5F02\u5E38\uff08Anomaly\uff09\uFF1A\u8FD1\u671F\u51FA\u73B0\u4E0D\u5BFB\u5E38\u7684\u652F\u51FA\u4E8B\u4EF6\n\u2022 \u4E60\u60EF\uff08Habit\uff09\uFF1A\u7A33\u5B9A\u51FA\u73B0\u7684\u6D88\u8D39\u6A21\u5F0F\u504F\u5DEE"
+            "zh-TW" -> "\u8CC7\u6599\u6D1E\u5BDF\u6703\u6839\u64DA\u76EE\u524D\u9031\u671F\u7684\u6536\u652F\u8A18\u9304\uFF0C\u81EA\u52D5\u63D0\u7149\u6700\u503C\u5F97\u95DC\u6CE8\u7684\u8B8A\u5316\uFF0C\u5E6B\u4F60\u66F4\u5FEB\u627E\u5230\u554F\u984C\u3002\n\n\u985E\u578B\u8AAA\u660E\uFF1A\n\u2022 \u8B8A\u5316\uff08Summary\uff09\uFF1A\u76F8\u8F03\u4E0A\u671F\u51FA\u73FE\u660E\u986F\u8B8A\u5316\n\u2022 \u98A8\u96AA\uff08Risk\uff09\uFF1A\u4F9D\u76EE\u524D\u8D68\u52E2\u53EF\u80FD\u767C\u751F\u8D85\u652F\u6216\u7D50\u9918\u4E0B\u6ED1\n\u2022 \u7570\u5E38\uff08Anomaly\uff09\uFF1A\u8FD1\u671F\u51FA\u73FE\u4E0D\u5C0B\u5E38\u7684\u652F\u51FA\u4E8B\u4EF6\n\u2022 \u7FD2\u6163\uff08Habit\uff09\uFF1A\u7A69\u5B9A\u51FA\u73FE\u7684\u6D88\u8CBB\u6A21\u5F0F\u504F\u5DEE"
+            else -> "Data Insights summarizes current-period records and highlights the most important spending signals so you can spot issues faster.\n\nTypes:\n\u2022 Summary: clear period-over-period change\n\u2022 Risk: current trend may lead to overspending or lower surplus\n\u2022 Anomaly: unusual expense events detected recently\n\u2022 Habit: recurring spending pattern deviation"
+        }
+
+        titleText.text = title
+        descriptionText.text = message
+        closeButton.text = text.close
+        val dialog = DialogFactory.createCardDialog(requireContext(), dialogView)
+        closeButton.setOnClickListener { dialog.dismiss() }
+        dialog.show()
+    }
+
+    private fun createInsightCard(card: InsightCard, showTypeTag: Boolean = true): View {
+        val itemBinding = ItemInsightRuleBinding.inflate(layoutInflater, null, false)
+        itemBinding.insightRuleType.isVisible = showTypeTag && card.typeLabel.isNotBlank()
+        itemBinding.insightRuleType.text = card.typeLabel.uppercase(numberLocale)
+        itemBinding.insightRuleTitle.text = card.title
+        itemBinding.insightRuleBody.text = card.body
+        val surfaceVariant = color(R.color.insights_surface_variant)
+        val fill = color(R.color.insights_surface_container_lowest)
+        background(itemBinding.insightRuleRoot, fill, 14f, ColorUtils.setAlphaComponent(surfaceVariant, 64))
+        val (tagTextColor, tagFill, tagStroke) = when (card.type) {
+            InsightType.RISK -> Triple(
+                color(R.color.insights_amber_600),
+                color(R.color.insights_amber_50),
+                color(R.color.insights_amber_200)
+            )
+            InsightType.ANOMALY -> Triple(
+                color(R.color.insights_error_container),
+                color(R.color.insights_red_50),
+                color(R.color.insights_red_100)
+            )
+            InsightType.HABIT -> {
+                val blue = color(R.color.insights_blue_500)
+                Triple(
+                    blue,
+                    ColorUtils.setAlphaComponent(blue, 26),
+                    ColorUtils.setAlphaComponent(blue, 76)
+                )
+            }
+            InsightType.SUGGESTION -> Triple(
+                color(R.color.insights_green_600),
+                color(R.color.insights_green_50),
+                color(R.color.insights_green_100)
+            )
+            InsightType.SUMMARY -> Triple(
+                color(R.color.insights_on_surface_variant),
+                color(R.color.insights_surface_container_low),
+                ColorUtils.setAlphaComponent(color(R.color.insights_surface_variant), 180)
+            )
+        }
+        itemBinding.insightRuleType.setTextColor(tagTextColor)
+        if (itemBinding.insightRuleType.isVisible) {
+            itemBinding.insightRuleType.setPadding(
+                dpInt(8f),
+                dpInt(3f),
+                dpInt(8f),
+                dpInt(3f)
+            )
+            background(
+                itemBinding.insightRuleType,
+                fillColor = tagFill,
+                radiusDp = 999f,
+                strokeColor = tagStroke,
+                strokeWidthDp = 1f
+            )
+        }
+        return itemBinding.root
+    }
+
+    private fun IndexedTransaction.toRuleTransaction(): RuleTransaction {
+        return RuleTransaction(
+            type = source.type,
+            categoryId = source.categoryId,
+            amount = source.amount,
+            timestampMillis = source.timestampMillis
+        )
+    }
+
+    private fun toInsightCard(item: InsightItem): InsightCard {
+        val actionLabel = when (item.action) {
+            InsightAction.TREND -> text.insightActionTrend
+            InsightAction.CATEGORY -> text.insightActionCategory
+            InsightAction.CALENDAR -> text.insightActionCalendar
+            InsightAction.NONE -> ""
+        }
+        val typeLabel = when (item.insightType) {
+            InsightType.SUMMARY -> text.insightTypeSummary
+            InsightType.RISK -> text.insightTypeRisk
+            InsightType.ANOMALY -> text.insightTypeAnomaly
+            InsightType.HABIT -> text.insightTypeHabit
+            InsightType.SUGGESTION -> text.insightTypeSuggestion
+        }
+        val categoryName = item.categoryId?.let { categoryName(it) }.orEmpty()
+        val isYear = uiState.granularity == InsightsGranularity.YEAR
+        fun tri(zhCn: String, zhTw: String, en: String): String {
+            return when (localeTag) {
+                "zh-CN" -> zhCn
+                "zh-TW" -> zhTw
+                else -> en
+            }
+        }
+
+        return when (item.insightId) {
+            InsightId.A1_EXPENSE_INCREASE -> {
+                val ratio = item.numeric["delta_ratio"] ?: 0.0
+                val delta = item.numeric["delta_amount"] ?: 0.0
+                InsightCard(
+                    type = item.insightType,
+                    typeLabel = typeLabel,
+                    title = if (isYear) {
+                        tri(
+                            "\u672C\u5E74\u603B\u652F\u51FA\u663E\u8457\u4E0A\u5347",
+                            "\u672C\u5E74\u7E3D\u652F\u51FA\u660E\u986F\u4E0A\u5347",
+                            "Total expense increased significantly this year"
+                        )
+                    } else {
+                        tri(
+                            "\u672C\u6708\u603B\u652F\u51FA\u663E\u8457\u4E0A\u5347",
+                            "\u672C\u6708\u7E3D\u652F\u51FA\u660E\u986F\u4E0A\u5347",
+                            "Total expense increased significantly this month"
+                        )
+                    },
+                    body = tri(
+                        "\u8F83\u4E0A\u671F\u589E\u957F ${formatPercent(ratio)}\uFF0C\u591A\u652F\u51FA ${money(delta)}\u3002",
+                        "\u8F03\u4E0A\u671F\u6210\u9577 ${formatPercent(ratio)}\uFF0C\u591A\u652F\u51FA ${money(delta)}\u3002",
+                        "Up ${formatPercent(ratio)} vs previous period, +${money(delta)} expense."
+                    ),
+                    keyNumber = "",
+                    action = item.action,
+                    actionLabel = actionLabel,
+                    categoryId = item.categoryId
+                )
+            }
+            InsightId.A4_SURPLUS_DROP -> {
+                val currentSurplus = item.numeric["current_surplus"] ?: 0.0
+                val delta = item.numeric["delta_amount_abs"] ?: 0.0
+                val rate = item.numeric["current_surplus_rate"] ?: 0.0
+                InsightCard(
+                    type = item.insightType,
+                    typeLabel = typeLabel,
+                    title = if (isYear) {
+                        tri(
+                            "\u672C\u5E74\u7ED3\u4F59\u660E\u663E\u6076\u5316",
+                            "\u672C\u5E74\u7D50\u9918\u660E\u986F\u60E1\u5316",
+                            "Surplus worsened this year"
+                        )
+                    } else {
+                        tri(
+                            "\u672C\u6708\u7ED3\u4F59\u660E\u663E\u6076\u5316",
+                            "\u672C\u6708\u7D50\u9918\u660E\u986F\u60E1\u5316",
+                            "Surplus worsened this month"
+                        )
+                    },
+                    body = tri(
+                        "\u5F53\u524D\u7ED3\u4F59 ${money(currentSurplus)}\uFF0C\u8F83\u4E0A\u671F\u53D8\u5316 ${money(delta)}\uFF0C\u7ED3\u4F59\u7387 ${formatPercent(rate)}\u3002",
+                        "\u76EE\u524D\u7D50\u9918 ${money(currentSurplus)}\uFF0C\u8F03\u4E0A\u671F\u8B8A\u5316 ${money(delta)}\uFF0C\u7D50\u9918\u7387 ${formatPercent(rate)}\u3002",
+                        "Current surplus ${money(currentSurplus)}, changed ${money(delta)} vs previous, surplus rate ${formatPercent(rate)}."
+                    ),
+                    keyNumber = "",
+                    action = item.action,
+                    actionLabel = actionLabel,
+                    categoryId = item.categoryId
+                )
+            }
+            InsightId.B1_SURPLUS_PROJECTION_LOW -> {
+                val projectedSurplus = item.numeric["projected_surplus"] ?: 0.0
+                val ratio = item.numeric["delta_ratio"] ?: 0.0
+                InsightCard(
+                    type = item.insightType,
+                    typeLabel = typeLabel,
+                    title = if (isYear) {
+                        tri(
+                            "\u5E74\u672B\u7ED3\u4F59\u53EF\u80FD\u504F\u4F4E",
+                            "\u5E74\u672B\u7D50\u9918\u53EF\u80FD\u504F\u4F4E",
+                            "Year-end surplus may be low"
+                        )
+                    } else {
+                        tri(
+                            "\u6708\u5E95\u7ED3\u4F59\u53EF\u80FD\u504F\u4F4E",
+                            "\u6708\u5E95\u7D50\u9918\u53EF\u80FD\u504F\u4F4E",
+                            "Month-end surplus may be low"
+                        )
+                    },
+                    body = tri(
+                        "\u6309\u5F53\u524D\u8282\u594F\uFF0C\u9884\u6D4B\u7ED3\u4F59\u7EA6 ${money(projectedSurplus)}\uFF0C\u4F4E\u4E8E\u8FD1\u671F\u5747\u503C ${formatPercent(ratio)}\u3002",
+                        "\u4F9D\u76EE\u524D\u7BC0\u594F\uFF0C\u9810\u4F30\u7D50\u9918\u7D04 ${money(projectedSurplus)}\uFF0C\u4F4E\u65BC\u8FD1\u671F\u5747\u503C ${formatPercent(ratio)}\u3002",
+                        "At current pace, projected surplus is ${money(projectedSurplus)}, ${formatPercent(ratio)} below recent average."
+                    ),
+                    keyNumber = "",
+                    action = item.action,
+                    actionLabel = actionLabel,
+                    categoryId = item.categoryId
+                )
+            }
+            InsightId.B2_BUDGET_OVERSPEND_RISK -> {
+                val projectedExpense = item.numeric["projected_expense"] ?: 0.0
+                val gap = item.numeric["projected_budget_gap"] ?: 0.0
+                InsightCard(
+                    type = item.insightType,
+                    typeLabel = typeLabel,
+                    title = if (isYear) {
+                        tri(
+                            "\u672C\u5E74\u5B58\u5728\u8D85\u652F\u98CE\u9669",
+                            "\u672C\u5E74\u5B58\u5728\u8D85\u652F\u98A8\u96AA",
+                            "Over-budget risk this year"
+                        )
+                    } else {
+                        tri(
+                            "\u672C\u6708\u5B58\u5728\u8D85\u652F\u98CE\u9669",
+                            "\u672C\u6708\u5B58\u5728\u8D85\u652F\u98A8\u96AA",
+                            "Over-budget risk this month"
+                        )
+                    },
+                    body = tri(
+                        "\u9884\u8BA1\u652F\u51FA ${money(projectedExpense)}\uFF0C\u53EF\u80FD\u8D85\u51FA\u9884\u7B97 ${money(gap)}\u3002",
+                        "\u9810\u8A08\u652F\u51FA ${money(projectedExpense)}\uFF0C\u53EF\u80FD\u8D85\u51FA\u9810\u7B97 ${money(gap)}\u3002",
+                        "Projected expense ${money(projectedExpense)} may exceed budget by ${money(gap)}."
+                    ),
+                    keyNumber = "",
+                    action = item.action,
+                    actionLabel = actionLabel,
+                    categoryId = item.categoryId
+                )
+            }
+            InsightId.C1_CATEGORY_SPIKE -> {
+                val ratio = item.numeric["delta_ratio"] ?: 0.0
+                val delta = item.numeric["delta_amount"] ?: 0.0
+                InsightCard(
+                    type = item.insightType,
+                    typeLabel = typeLabel,
+                    title = tri(
+                        "$categoryName \u652F\u51FA\u660E\u663E\u5347\u9AD8",
+                        "$categoryName \u652F\u51FA\u660E\u986F\u5347\u9AD8",
+                        "$categoryName spending spiked"
+                    ),
+                    body = tri(
+                        "$categoryName \u8F83\u8FD1\u671F\u57FA\u7EBF\u9AD8 ${formatPercent(ratio)}\uFF0C\u591A\u652F\u51FA ${money(delta)}\u3002",
+                        "$categoryName \u8F03\u8FD1\u671F\u57FA\u7DDA\u9AD8 ${formatPercent(ratio)}\uFF0C\u591A\u652F\u51FA ${money(delta)}\u3002",
+                        "$categoryName is ${formatPercent(ratio)} above baseline, +${money(delta)} expense."
+                    ),
+                    keyNumber = "",
+                    action = item.action,
+                    actionLabel = actionLabel,
+                    categoryId = item.categoryId
+                )
+            }
+            InsightId.D1_LARGE_TRANSACTION -> {
+                val amount = item.numeric["amount"] ?: 0.0
+                val dateText = item.timestampMillis?.let { formatInsightDate(it) } ?: "--"
+                InsightCard(
+                    type = item.insightType,
+                    typeLabel = typeLabel,
+                    title = tri(
+                        "\u6700\u8FD1\u51FA\u73B0\u5927\u989D\u5355\u7B14\u652F\u51FA",
+                        "\u8FD1\u671F\u51FA\u73FE\u5927\u984D\u55AE\u7B46\u652F\u51FA",
+                        "A large single expense was detected"
+                    ),
+                    body = tri(
+                        "$dateText \u6709\u4E00\u7B14 ${money(amount)} \u7684\u652F\u51FA\uFF0C\u660E\u663E\u9AD8\u4E8E\u8FD1\u671F\u5E38\u89C4\u6C34\u5E73\u3002",
+                        "$dateText \u6709\u4E00\u7B46 ${money(amount)} \u7684\u652F\u51FA\uFF0C\u660E\u986F\u9AD8\u65BC\u8FD1\u671F\u5E38\u614B\u6C34\u6E96\u3002",
+                        "On $dateText, a ${money(amount)} expense was detected and is well above normal."
+                    ),
+                    keyNumber = "",
+                    action = item.action,
+                    actionLabel = actionLabel,
+                    categoryId = item.categoryId
+                )
+            }
+            InsightId.F1_WEEKEND_HIGHER -> {
+                val weekendAvg = item.numeric["weekend_avg"] ?: 0.0
+                val weekdayAvg = item.numeric["weekday_avg"] ?: 0.0
+                val multiple = item.numeric["multiple"] ?: 0.0
+                InsightCard(
+                    type = item.insightType,
+                    typeLabel = typeLabel,
+                    title = tri(
+                        "\u5468\u672B\u6D88\u8D39\u663E\u8457\u9AD8\u4E8E\u5DE5\u4F5C\u65E5",
+                        "\u9031\u672B\u6D88\u8CBB\u660E\u986F\u9AD8\u65BC\u5E73\u65E5",
+                        "Weekend spending is much higher than weekdays"
+                    ),
+                    body = tri(
+                        "\u5468\u672B\u65E5\u5747 ${money(weekendAvg)}\uFF0C\u5DE5\u4F5C\u65E5\u65E5\u5747 ${money(weekdayAvg)}\uFF0C\u7EA6\u4E3A ${multiple.formatTrimmed()}\u500D\u3002",
+                        "\u9031\u672B\u65E5\u5747 ${money(weekendAvg)}\uFF0C\u5E73\u65E5\u65E5\u5747 ${money(weekdayAvg)}\uFF0C\u7D04\u70BA ${multiple.formatTrimmed()}\u500D\u3002",
+                        "Weekend daily avg ${money(weekendAvg)} vs weekday ${money(weekdayAvg)} (${multiple.formatTrimmed()}x)."
+                    ),
+                    keyNumber = "",
+                    action = item.action,
+                    actionLabel = actionLabel,
+                    categoryId = item.categoryId
+                )
+            }
+            InsightId.H1_TOP_SAVABLE_CATEGORY -> {
+                val savable = item.numeric["savable_amount"] ?: 0.0
+                InsightCard(
+                    type = item.insightType,
+                    typeLabel = typeLabel,
+                    title = tri(
+                        "\u4F18\u5148\u63A7\u5236 $categoryName \u66F4\u6709\u6548",
+                        "\u512A\u5148\u63A7\u5236 $categoryName \u66F4\u6709\u6548",
+                        "Prioritizing $categoryName can save more"
+                    ),
+                    body = tri(
+                        "\u82E5 $categoryName \u6062\u590D\u5230\u8FD1\u671F\u5E73\u5747\u6C34\u5E73\uFF0C\u672C\u671F\u9884\u8BA1\u53EF\u591A\u7ED3\u4F59 ${money(savable)}\u3002",
+                        "\u82E5 $categoryName \u56DE\u5230\u8FD1\u671F\u5E73\u5747\u6C34\u6E96\uFF0C\u672C\u671F\u9810\u4F30\u53EF\u591A\u7D50\u9918 ${money(savable)}\u3002",
+                        "If $categoryName returns to baseline, you could save about ${money(savable)} this period."
+                    ),
+                    keyNumber = "",
+                    action = item.action,
+                    actionLabel = actionLabel,
+                    categoryId = item.categoryId
+                )
+            }
+        }
+    }
+
+    private fun formatInsightDate(timestampMillis: Long): String {
+        val date = Instant.ofEpochMilli(timestampMillis).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+        val pattern = if (localeTag == "en") "MMM d, yyyy" else "yyyy/M/d"
+        return date.format(DateTimeFormatter.ofPattern(pattern, numberLocale))
+    }
+
     private fun renderTrend(buckets: List<InsightsTrendBucket>) {
         binding.insightsTrendChart.submitData(
             buckets = buckets,
@@ -1275,53 +1723,6 @@ class InsightsFragment : Fragment() {
         }
     }
 
-    private fun detectExpenseAnomalies(
-        currentTransactions: List<IndexedTransaction>,
-        previousTransactions: List<IndexedTransaction>
-    ): List<Anomaly> {
-        val currentExpenses = currentTransactions.filter { it.source.type == TransactionType.EXPENSE }
-        if (currentExpenses.isEmpty()) return emptyList()
-        var baselineExpenses = previousTransactions.filter { it.source.type == TransactionType.EXPENSE }
-        if (baselineExpenses.isEmpty()) {
-            val startMillis = if (uiState.granularity == InsightsGranularity.ALL) {
-                currentTransactions.minOfOrNull { it.source.timestampMillis } ?: 0L
-            } else if (uiState.granularity == InsightsGranularity.MONTH) {
-                LocalDate.of(uiState.year, uiState.monthIndex + 1, 1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
-            } else {
-                LocalDate.of(uiState.year, 1, 1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
-            }
-            baselineExpenses = transactionIndex?.transactions.orEmpty().filter {
-                it.source.type == TransactionType.EXPENSE && it.source.timestampMillis < startMillis
-            }
-        }
-        val fallbackSample = baselineExpenses.map { it.source.amount }.filter { it > 0.0 }
-        val byCategory = baselineExpenses.groupBy { it.source.categoryId }
-        return currentExpenses.mapNotNull { transaction ->
-            val categorySample = byCategory[transaction.source.categoryId].orEmpty().map { it.source.amount }
-            val sample = if (categorySample.size >= 3) categorySample else fallbackSample
-            if (sample.isEmpty()) {
-                if (transaction.source.amount < 500.0) return@mapNotNull null
-                return@mapNotNull Anomaly(
-                    categoryName = categoryName(transaction.source.categoryId),
-                    amount = transaction.source.amount,
-                    baseline = 0.0,
-                    severity = transaction.source.amount / 500.0
-                )
-            }
-            val mean = sample.average()
-            val variance = sample.sumOf { (it - mean) * (it - mean) } / sample.size
-            val deviation = kotlin.math.sqrt(variance)
-            val threshold = max(mean * 1.8, max(mean + deviation * 2.0, mean + 40.0))
-            if (transaction.source.amount < threshold) return@mapNotNull null
-            Anomaly(
-                categoryName = categoryName(transaction.source.categoryId),
-                amount = transaction.source.amount,
-                baseline = mean,
-                severity = if (mean > 0.0) transaction.source.amount / mean else transaction.source.amount / threshold
-            )
-        }.sortedByDescending { it.severity }
-    }
-
     private fun updateToggleStyles() {
         styleSliderToggle(binding.insightsTrendMetricExpense, uiState.trendMetric == InsightsMetric.EXPENSE)
         styleSliderToggle(binding.insightsTrendMetricIncome, uiState.trendMetric == InsightsMetric.INCOME)
@@ -1611,13 +2012,22 @@ class InsightsFragment : Fragment() {
     private data class MonthBucket(val year: Int, val monthIndex: Int)
     private data class Summary(val income: Double, val expense: Double) { val balance: Double get() = income - expense }
     private data class PeriodProgress(val totalUnits: Int, val elapsedUnits: Int, val isCurrentPeriod: Boolean)
-    private data class Anomaly(val categoryName: String, val amount: Double, val baseline: Double, val severity: Double)
     private data class CalendarStat(val dayLabel: Int, val monthIndex: Int, val income: Double, val expense: Double)
     private data class ProjectCalendarStat(val date: LocalDate, val income: Double, val expense: Double)
     private data class ProjectMonthCalendarStat(val month: YearMonth, val income: Double, val expense: Double)
     private data class YearCalendarStat(val year: Int, val income: Double, val expense: Double)
     private data class ToneScale(val maxValue: Double, val positiveMax: Double, val negativeMax: Double)
     private data class CellTone(val fillColor: Int, val strokeColor: Int, val primaryTextColor: Int)
+    private data class InsightCard(
+        val type: InsightType,
+        val typeLabel: String,
+        val title: String,
+        val body: String,
+        val keyNumber: String,
+        val action: InsightAction,
+        val actionLabel: String,
+        val categoryId: String?
+    )
 
     companion object {
         private const val INSIGHTS_PERIOD_PICKER_REQUEST_KEY = "insights_period_picker_result"
