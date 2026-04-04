@@ -33,6 +33,7 @@ import com.example.account.data.LedgerCategory
 import com.example.account.data.LedgerTransaction
 import com.example.account.data.LedgerViewModel
 import com.example.account.data.TransactionType
+import com.example.account.data.amountInCny
 import com.example.account.databinding.FragmentInsightsBinding
 import com.example.account.databinding.ItemInsightRuleBinding
 import com.example.account.databinding.ItemInsightsCategoryBinding
@@ -746,7 +747,7 @@ class InsightsFragment : Fragment() {
         return RuleTransaction(
             type = source.type,
             categoryId = source.categoryId,
-            amount = source.amount,
+            amount = amountCny,
             timestampMillis = source.timestampMillis
         )
     }
@@ -1081,7 +1082,7 @@ class InsightsFragment : Fragment() {
         val totals = linkedMapOf<String, Double>()
         currentTransactions.forEach { transaction ->
             if (transaction.source.type != targetType) return@forEach
-            totals[transaction.source.categoryId] = (totals[transaction.source.categoryId] ?: 0.0) + transaction.source.amount
+            totals[transaction.source.categoryId] = (totals[transaction.source.categoryId] ?: 0.0) + transaction.amountCny
         }
         val total = totals.values.sum()
         return totals.entries.map { (categoryId, amount) ->
@@ -1203,8 +1204,8 @@ class InsightsFragment : Fragment() {
             val bucket = grouped[date].orEmpty()
             date to ProjectCalendarStat(
                 date = date,
-                income = bucket.sumOf { if (it.source.type == TransactionType.INCOME) it.source.amount else 0.0 },
-                expense = bucket.sumOf { if (it.source.type == TransactionType.EXPENSE) it.source.amount else 0.0 }
+                income = bucket.sumOf { if (it.source.type == TransactionType.INCOME) it.amountCny else 0.0 },
+                expense = bucket.sumOf { if (it.source.type == TransactionType.EXPENSE) it.amountCny else 0.0 }
             )
         }
         val stats = statsByDate.values.toList()
@@ -1265,8 +1266,8 @@ class InsightsFragment : Fragment() {
             val bucket = grouped[month].orEmpty()
             ProjectMonthCalendarStat(
                 month = month,
-                income = bucket.sumOf { if (it.source.type == TransactionType.INCOME) it.source.amount else 0.0 },
-                expense = bucket.sumOf { if (it.source.type == TransactionType.EXPENSE) it.source.amount else 0.0 }
+                income = bucket.sumOf { if (it.source.type == TransactionType.INCOME) it.amountCny else 0.0 },
+                expense = bucket.sumOf { if (it.source.type == TransactionType.EXPENSE) it.amountCny else 0.0 }
             )
         }
         val values = stats.map { calendarMetricValue(it.income, it.expense) }
@@ -1305,8 +1306,8 @@ class InsightsFragment : Fragment() {
             val bucket = grouped[year].orEmpty()
             YearCalendarStat(
                 year = year,
-                income = bucket.sumOf { if (it.source.type == TransactionType.INCOME) it.source.amount else 0.0 },
-                expense = bucket.sumOf { if (it.source.type == TransactionType.EXPENSE) it.source.amount else 0.0 }
+                income = bucket.sumOf { if (it.source.type == TransactionType.INCOME) it.amountCny else 0.0 },
+                expense = bucket.sumOf { if (it.source.type == TransactionType.EXPENSE) it.amountCny else 0.0 }
             )
         }
         val values = stats.map { calendarMetricValue(it.income, it.expense) }
@@ -1485,6 +1486,7 @@ class InsightsFragment : Fragment() {
             val date = Instant.ofEpochMilli(transaction.timestampMillis).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
             IndexedTransaction(
                 source = transaction,
+                amountCny = transaction.amountInCny(),
                 year = date.year,
                 monthIndex = date.monthValue - 1,
                 day = date.dayOfMonth,
@@ -1537,7 +1539,7 @@ class InsightsFragment : Fragment() {
         var income = 0.0
         var expense = 0.0
         transactions.forEach { transaction ->
-            if (transaction.source.type == TransactionType.INCOME) income += transaction.source.amount else expense += transaction.source.amount
+            if (transaction.source.type == TransactionType.INCOME) income += transaction.amountCny else expense += transaction.amountCny
         }
         return Summary(income, expense)
     }
@@ -1558,8 +1560,8 @@ class InsightsFragment : Fragment() {
                     val bucket = groupedByDate[date].orEmpty()
                     InsightsTrendBucket(
                         label = date.dayOfMonth.toString(),
-                        income = bucket.sumOf { if (it.source.type == TransactionType.INCOME) it.source.amount else 0.0 },
-                        expense = bucket.sumOf { if (it.source.type == TransactionType.EXPENSE) it.source.amount else 0.0 }
+                        income = bucket.sumOf { if (it.source.type == TransactionType.INCOME) it.amountCny else 0.0 },
+                        expense = bucket.sumOf { if (it.source.type == TransactionType.EXPENSE) it.amountCny else 0.0 }
                     )
                 }
             }
@@ -1582,8 +1584,8 @@ class InsightsFragment : Fragment() {
                     while (!dateCursor.isAfter(weekEnd)) {
                         if (!dateCursor.isBefore(firstDate) && !dateCursor.isAfter(lastDate)) {
                             val bucket = groupedByDate[dateCursor].orEmpty()
-                            income += bucket.sumOf { if (it.source.type == TransactionType.INCOME) it.source.amount else 0.0 }
-                            expense += bucket.sumOf { if (it.source.type == TransactionType.EXPENSE) it.source.amount else 0.0 }
+                            income += bucket.sumOf { if (it.source.type == TransactionType.INCOME) it.amountCny else 0.0 }
+                            expense += bucket.sumOf { if (it.source.type == TransactionType.EXPENSE) it.amountCny else 0.0 }
                         }
                         dateCursor = dateCursor.plusDays(1)
                     }
@@ -1609,8 +1611,8 @@ class InsightsFragment : Fragment() {
                     val bucket = groupedByYear[year].orEmpty()
                     InsightsTrendBucket(
                         label = year.toString(),
-                        income = bucket.sumOf { if (it.source.type == TransactionType.INCOME) it.source.amount else 0.0 },
-                        expense = bucket.sumOf { if (it.source.type == TransactionType.EXPENSE) it.source.amount else 0.0 }
+                        income = bucket.sumOf { if (it.source.type == TransactionType.INCOME) it.amountCny else 0.0 },
+                        expense = bucket.sumOf { if (it.source.type == TransactionType.EXPENSE) it.amountCny else 0.0 }
                     )
                 }
             } else {
@@ -1630,8 +1632,8 @@ class InsightsFragment : Fragment() {
                     }
                     InsightsTrendBucket(
                         label = label,
-                        income = bucket.sumOf { if (it.source.type == TransactionType.INCOME) it.source.amount else 0.0 },
-                        expense = bucket.sumOf { if (it.source.type == TransactionType.EXPENSE) it.source.amount else 0.0 }
+                        income = bucket.sumOf { if (it.source.type == TransactionType.INCOME) it.amountCny else 0.0 },
+                        expense = bucket.sumOf { if (it.source.type == TransactionType.EXPENSE) it.amountCny else 0.0 }
                     )
                 }
             }
@@ -1647,8 +1649,8 @@ class InsightsFragment : Fragment() {
                 transactions.forEach { transaction ->
                     val current = buckets[transaction.monthIndex]
                     buckets[transaction.monthIndex] = current.copy(
-                        income = current.income + if (transaction.source.type == TransactionType.INCOME) transaction.source.amount else 0.0,
-                        expense = current.expense + if (transaction.source.type == TransactionType.EXPENSE) transaction.source.amount else 0.0
+                        income = current.income + if (transaction.source.type == TransactionType.INCOME) transaction.amountCny else 0.0,
+                        expense = current.expense + if (transaction.source.type == TransactionType.EXPENSE) transaction.amountCny else 0.0
                     )
                 }
             }
@@ -1665,8 +1667,8 @@ class InsightsFragment : Fragment() {
                     val index = transaction.day - 1
                     val current = buckets[index]
                     buckets[index] = current.copy(
-                        income = current.income + if (transaction.source.type == TransactionType.INCOME) transaction.source.amount else 0.0,
-                        expense = current.expense + if (transaction.source.type == TransactionType.EXPENSE) transaction.source.amount else 0.0
+                        income = current.income + if (transaction.source.type == TransactionType.INCOME) transaction.amountCny else 0.0,
+                        expense = current.expense + if (transaction.source.type == TransactionType.EXPENSE) transaction.amountCny else 0.0
                     )
                 }
             }
@@ -1680,8 +1682,8 @@ class InsightsFragment : Fragment() {
             val index = transaction.day - 1
             val current = stats[index]
             stats[index] = current.copy(
-                income = current.income + if (transaction.source.type == TransactionType.INCOME) transaction.source.amount else 0.0,
-                expense = current.expense + if (transaction.source.type == TransactionType.EXPENSE) transaction.source.amount else 0.0
+                income = current.income + if (transaction.source.type == TransactionType.INCOME) transaction.amountCny else 0.0,
+                expense = current.expense + if (transaction.source.type == TransactionType.EXPENSE) transaction.amountCny else 0.0
             )
         }
         return stats
@@ -1692,8 +1694,8 @@ class InsightsFragment : Fragment() {
         transactions.forEach { transaction ->
             val current = stats[transaction.monthIndex]
             stats[transaction.monthIndex] = current.copy(
-                income = current.income + if (transaction.source.type == TransactionType.INCOME) transaction.source.amount else 0.0,
-                expense = current.expense + if (transaction.source.type == TransactionType.EXPENSE) transaction.source.amount else 0.0
+                income = current.income + if (transaction.source.type == TransactionType.INCOME) transaction.amountCny else 0.0,
+                expense = current.expense + if (transaction.source.type == TransactionType.EXPENSE) transaction.amountCny else 0.0
             )
         }
         return stats
@@ -2003,6 +2005,7 @@ class InsightsFragment : Fragment() {
 
     private data class IndexedTransaction(
         val source: LedgerTransaction,
+        val amountCny: Double,
         val year: Int,
         val monthIndex: Int,
         val day: Int,

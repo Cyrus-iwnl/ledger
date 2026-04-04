@@ -141,13 +141,13 @@ class LedgerRepository(context: Context) {
 
             val chartPoints = chartDaySequence.map { date ->
                 val bucket = allTransactions.filter { sameDay(it.timestampMillis, date, zoneId) }
-                val income = bucket.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
-                val expense = bucket.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+                val income = bucket.filter { it.type == TransactionType.INCOME }.sumOf { it.amountInCny() }
+                val expense = bucket.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amountInCny() }
                 ChartPoint(LedgerFormatters.shortLabel(date), income, expense)
             }
 
-            val totalIncome = monthTransactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
-            val totalExpense = monthTransactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+            val totalIncome = monthTransactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amountInCny() }
+            val totalExpense = monthTransactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amountInCny() }
 
             val daySummaries = summaryDaySequence.reversed().mapNotNull { date ->
                 val bucket = monthTransactions
@@ -156,8 +156,8 @@ class LedgerRepository(context: Context) {
                 if (bucket.isEmpty()) {
                     null
                 } else {
-                    val income = bucket.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
-                    val expense = bucket.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+                    val income = bucket.filter { it.type == TransactionType.INCOME }.sumOf { it.amountInCny() }
+                    val expense = bucket.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amountInCny() }
                     DaySummary(
                         dateMillis = date.atStartOfDay(zoneId).toInstant().toEpochMilli(),
                         dayKey = date.toString(),
@@ -199,13 +199,13 @@ class LedgerRepository(context: Context) {
 
         val chartPoints = chartDaySequence.map { date ->
             val bucket = allTransactions.filter { sameDay(it.timestampMillis, date, zoneId) }
-            val income = bucket.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
-            val expense = bucket.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+            val income = bucket.filter { it.type == TransactionType.INCOME }.sumOf { it.amountInCny() }
+            val expense = bucket.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amountInCny() }
             ChartPoint(LedgerFormatters.shortLabel(date), income, expense)
         }
 
-        val totalIncome = yearTransactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
-        val totalExpense = yearTransactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+        val totalIncome = yearTransactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amountInCny() }
+        val totalExpense = yearTransactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amountInCny() }
 
         val daySummaries = summaryDaySequence.reversed().mapNotNull { date ->
             val bucket = yearTransactions
@@ -214,8 +214,8 @@ class LedgerRepository(context: Context) {
             if (bucket.isEmpty()) {
                 null
             } else {
-                val income = bucket.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
-                val expense = bucket.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+                val income = bucket.filter { it.type == TransactionType.INCOME }.sumOf { it.amountInCny() }
+                val expense = bucket.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amountInCny() }
                 DaySummary(
                     dateMillis = date.atStartOfDay(zoneId).toInstant().toEpochMilli(),
                     dayKey = date.toString(),
@@ -262,8 +262,8 @@ class LedgerRepository(context: Context) {
 
         val chartPoints = chartDaySequence.map { date ->
             val bucket = groupedByDay[date].orEmpty()
-            val income = bucket.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
-            val expense = bucket.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+            val income = bucket.filter { it.type == TransactionType.INCOME }.sumOf { it.amountInCny() }
+            val expense = bucket.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amountInCny() }
             ChartPoint(LedgerFormatters.shortLabel(date), income, expense)
         }
 
@@ -272,8 +272,8 @@ class LedgerRepository(context: Context) {
             if (bucket.isEmpty()) {
                 null
             } else {
-                val income = bucket.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
-                val expense = bucket.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+                val income = bucket.filter { it.type == TransactionType.INCOME }.sumOf { it.amountInCny() }
+                val expense = bucket.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amountInCny() }
                 DaySummary(
                     dateMillis = date.atStartOfDay(zoneId).toInstant().toEpochMilli(),
                     dayKey = date.toString(),
@@ -285,8 +285,8 @@ class LedgerRepository(context: Context) {
             }
         }
 
-        val totalIncome = allTransactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
-        val totalExpense = allTransactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+        val totalIncome = allTransactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amountInCny() }
+        val totalExpense = allTransactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amountInCny() }
         return LedgerDashboard(
             totalIncome = totalIncome,
             totalExpense = totalExpense,
@@ -312,13 +312,13 @@ class LedgerRepository(context: Context) {
 
             val totalIncome = currentMonthTransactions
                 .filter { it.type == TransactionType.INCOME }
-                .sumOf { it.amount }
+                .sumOf { it.amountInCny() }
             val totalExpense = currentMonthTransactions
                 .filter { it.type == TransactionType.EXPENSE }
-                .sumOf { it.amount }
+                .sumOf { it.amountInCny() }
             val previousMonthExpense = previousMonthTransactions
                 .filter { it.type == TransactionType.EXPENSE }
-                .sumOf { it.amount }
+                .sumOf { it.amountInCny() }
             val expenseDelta = when {
                 previousMonthExpense <= 0.0 && totalExpense <= 0.0 -> 0.0
                 previousMonthExpense <= 0.0 -> 100.0
@@ -339,8 +339,8 @@ class LedgerRepository(context: Context) {
                     add(
                         InsightsWeekPoint(
                             label = "WK $weekIndex",
-                            income = bucket.filter { it.type == TransactionType.INCOME }.sumOf { it.amount },
-                            expense = bucket.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+                            income = bucket.filter { it.type == TransactionType.INCOME }.sumOf { it.amountInCny() },
+                            expense = bucket.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amountInCny() }
                         )
                     )
                     cursor = weekEnd.plusDays(1)
@@ -355,7 +355,7 @@ class LedgerRepository(context: Context) {
                 .groupBy { it.categoryId }
                 .mapNotNull { (categoryId, items) ->
                     val category = categories.firstOrNull { it.id == categoryId } ?: return@mapNotNull null
-                    val amount = items.sumOf { it.amount }
+                    val amount = items.sumOf { it.amountInCny() }
                     InsightsCategoryStat(
                         category = category,
                         amount = amount,
@@ -402,10 +402,10 @@ class LedgerRepository(context: Context) {
 
         val totalIncome = transactions
             .filter { it.type == TransactionType.INCOME }
-            .sumOf { it.amount }
+            .sumOf { it.amountInCny() }
         val totalExpense = transactions
             .filter { it.type == TransactionType.EXPENSE }
-            .sumOf { it.amount }
+            .sumOf { it.amountInCny() }
 
         val dayCount = java.time.temporal.ChronoUnit.DAYS.between(firstDate, lastDate).toInt() + 1
         val dailyPoints = (0 until dayCount).map { offset ->
@@ -415,8 +415,8 @@ class LedgerRepository(context: Context) {
             }
             InsightsWeekPoint(
                 label = LedgerFormatters.shortLabel(date),
-                income = bucket.filter { it.type == TransactionType.INCOME }.sumOf { it.amount },
-                expense = bucket.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+                income = bucket.filter { it.type == TransactionType.INCOME }.sumOf { it.amountInCny() },
+                expense = bucket.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amountInCny() }
             )
         }
 
@@ -426,7 +426,7 @@ class LedgerRepository(context: Context) {
             .groupBy { it.categoryId }
             .mapNotNull { (categoryId, items) ->
                 val category = categories.firstOrNull { it.id == categoryId } ?: return@mapNotNull null
-                val amount = items.sumOf { it.amount }
+                val amount = items.sumOf { it.amountInCny() }
                 InsightsCategoryStat(
                     category = category,
                     amount = amount,
@@ -476,6 +476,11 @@ class LedgerRepository(context: Context) {
         val existing = draft.transactionId?.let { id ->
             transactions.firstOrNull { it.id == id }
         }
+        val resolvedAmountCny = resolveAmountCnyForSavedTransaction(
+            currency = draft.currency,
+            amount = parsedAmount,
+            existing = existing
+        )
         val preservedRefundedAmount = if (draft.type == TransactionType.EXPENSE) {
             existing?.refundedAmount ?: 0.0
         } else {
@@ -486,6 +491,7 @@ class LedgerRepository(context: Context) {
             type = draft.type,
             categoryId = normalizeCategoryId(draft.categoryId),
             amount = parsedAmount,
+            amountCny = resolvedAmountCny,
             refundedAmount = preservedRefundedAmount,
             note = draft.note.trim(),
             timestampMillis = draft.dateMillis,
@@ -497,6 +503,7 @@ class LedgerRepository(context: Context) {
         } else {
             transactions.add(0, tx)
         }
+        persistLastUsedCurrency(draft.currency)
         persist(transactions)
         tx.id
     }
@@ -521,8 +528,14 @@ class LedgerRepository(context: Context) {
             throw IllegalArgumentException("Refund amount cannot exceed original expense amount.")
         }
 
+        val cnyPerUnit = if (current.amount > 0.0) {
+            current.amountCny / current.amount
+        } else {
+            current.currency.defaultRateToCny
+        }
         val updated = current.copy(
             amount = (current.amount - refundAmount).coerceAtLeast(0.0),
+            amountCny = (current.amountCny - (refundAmount * cnyPerUnit)).coerceAtLeast(0.0),
             refundedAmount = current.refundedAmount + refundAmount
         )
         transactions[index] = updated
@@ -541,6 +554,26 @@ class LedgerRepository(context: Context) {
 
     fun isCurrentLedgerProject(): Boolean = synchronized(lock) {
         getCurrentLedger().type == LedgerBookType.PROJECT
+    }
+
+    fun getExchangeRateToCny(currency: CurrencyCode): Double = synchronized(lock) {
+        resolveExchangeRateToCny(currency)
+    }
+
+    fun setExchangeRateToCny(currency: CurrencyCode, rate: Double) = synchronized(lock) {
+        if (currency == CurrencyCode.CNY) {
+            return@synchronized
+        }
+        require(rate.isFinite() && rate > 0.0) { "Exchange rate must be a positive number." }
+        require(BigDecimal.valueOf(rate).scale() <= 6) { "Exchange rate can have up to 6 decimal places." }
+        prefs.edit()
+            .putString(exchangeRateKey(currency), rate.toString())
+            .apply()
+    }
+
+    fun getLastUsedCurrency(): CurrencyCode = synchronized(lock) {
+        prefs.getString(KEY_LAST_USED_CURRENCY, CurrencyCode.CNY.name)
+            .toCurrencyCodeOrDefault()
     }
 
     fun getMonthlyBudget(month: YearMonth): Double? = synchronized(lock) {
@@ -615,14 +648,14 @@ class LedgerRepository(context: Context) {
                     YearMonth.from(java.time.Instant.ofEpochMilli(tx.timestampMillis).atZone(ZoneId.systemDefault())) == month &&
                         tx.type == TransactionType.EXPENSE
                 }
-                .sumOf { it.amount }
+                .sumOf { it.amountInCny() }
         }
     }
 
     fun getTotalExpense(): Double = synchronized(lock) {
         loadTransactionsInternal()
             .filter { it.type == TransactionType.EXPENSE }
-            .sumOf { it.amount }
+            .sumOf { it.amountInCny() }
     }
 
     private fun syncBuiltInDataAndNextId() {
@@ -921,6 +954,7 @@ class LedgerRepository(context: Context) {
         put("type", type.name)
         put("categoryId", categoryId)
         put("amount", amount)
+        put("amountCny", amountCny)
         put("refundedAmount", refundedAmount)
         put("currency", currency.name)
         put("note", note)
@@ -928,17 +962,69 @@ class LedgerRepository(context: Context) {
     }
 
     private fun JSONObject.toTransaction(): LedgerTransaction {
+        val currency = optString("currency", CurrencyCode.CNY.name)
+            .toCurrencyCodeOrDefault()
         return LedgerTransaction(
             id = getLong("id"),
             type = TransactionType.valueOf(getString("type")),
             categoryId = normalizeCategoryId(getString("categoryId")),
             amount = getDouble("amount"),
+            amountCny = normalizeAmountCny(
+                raw = optDouble("amountCny", Double.NaN),
+                amount = getDouble("amount"),
+                currency = currency
+            ),
             refundedAmount = optDouble("refundedAmount", 0.0),
             note = optString("note", ""),
             timestampMillis = getLong("timestampMillis"),
-            currency = optString("currency", CurrencyCode.CNY.name)
-                .toCurrencyCodeOrDefault()
+            currency = currency
         )
+    }
+
+    private fun resolveAmountCnyForSavedTransaction(
+        currency: CurrencyCode,
+        amount: Double,
+        existing: LedgerTransaction?
+    ): Double {
+        if (currency == CurrencyCode.CNY) {
+            return amount
+        }
+        if (
+            existing != null &&
+            existing.currency == currency &&
+            kotlin.math.abs(existing.amount - amount) < 1e-9
+        ) {
+            return existing.amountCny
+        }
+        val rate = resolveExchangeRateToCny(currency)
+        return amount * rate
+    }
+
+    private fun normalizeAmountCny(raw: Double, amount: Double, currency: CurrencyCode): Double {
+        if (raw.isFinite() && raw >= 0.0) {
+            return raw
+        }
+        return amount * currency.defaultRateToCny
+    }
+
+    private fun resolveExchangeRateToCny(currency: CurrencyCode): Double {
+        if (currency == CurrencyCode.CNY) {
+            return 1.0
+        }
+        val stored = prefs.getString(exchangeRateKey(currency), null)
+            ?.toDoubleOrNull()
+            ?.takeIf { it.isFinite() && it > 0.0 }
+        return stored ?: currency.defaultRateToCny
+    }
+
+    private fun exchangeRateKey(currency: CurrencyCode): String {
+        return "$KEY_EXCHANGE_RATE_PREFIX${currency.code}"
+    }
+
+    private fun persistLastUsedCurrency(currency: CurrencyCode) {
+        prefs.edit()
+            .putString(KEY_LAST_USED_CURRENCY, currency.name)
+            .apply()
     }
 
     private fun String?.toCurrencyCodeOrDefault(): CurrencyCode {
@@ -1132,6 +1218,8 @@ class LedgerRepository(context: Context) {
         private const val KEY_MONTHLY_BUDGET_LEGACY = "monthly_budget"
         private const val KEY_YEARLY_BUDGET_PREFIX = "yearly_budget_"
         private const val KEY_PROJECT_BUDGET_PREFIX = "project_budget_"
+        private const val KEY_EXCHANGE_RATE_PREFIX = "exchange_rate_"
+        private const val KEY_LAST_USED_CURRENCY = "last_used_currency"
         private const val MONTHLY_BUDGET_CLEARED_MARKER = "__cleared__"
     }
 }

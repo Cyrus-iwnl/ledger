@@ -304,7 +304,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingStart="20dp"
+                android:paddingStart="14dp"
                 android:paddingTop="8dp"
                 android:paddingEnd="20dp"
                 android:paddingBottom="6dp">
@@ -313,9 +313,16 @@
                     android:id="@+id/currency_symbol"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:background="@drawable/bg_currency_chip"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:paddingStart="10dp"
+                    android:paddingTop="4dp"
+                    android:paddingEnd="10dp"
+                    android:paddingBottom="4dp"
                     android:text="&#165;"
-                    android:textColor="#F87171"
-                    android:textSize="22sp"
+                    android:textColor="#2D3335"
+                    android:textSize="16sp"
                     android:textStyle="bold"
                     android:fontFamily="sans-serif-medium"
                     android:layout_marginEnd="4dp" />
@@ -337,19 +344,6 @@
                     app:autoSizeMaxTextSize="40sp"
                     app:autoSizeStepGranularity="1sp" />
 
-            <!-- invisible currency_button kept for code compatibility -->
-            <com.google.android.material.button.MaterialButton
-                    android:id="@+id/currency_button"
-                    style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:visibility="gone"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    android:minWidth="0dp"
-                    android:text="CNY"
-                    app:backgroundTint="@color/app_background"
-                    app:cornerRadius="15dp" />
         </LinearLayout>
 
         <LinearLayout
@@ -652,5 +646,3 @@
     </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 </androidx.constraintlayout.widget.ConstraintLayout>
-
-

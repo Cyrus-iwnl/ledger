@@ -26,4 +26,8 @@
         <item name="android:windowEnterAnimation">@anim/dialog_card_enter</item>
         <item name="android:windowExitAnimation">@anim/dialog_card_exit</item>
     </style>
+
+    <style name="Widget.Account.CurrencyPopupMenu" parent="Widget.AppCompat.PopupMenu">
+        <item name="android:popupBackground">@drawable/bg_currency_popup_menu</item>
+    </style>
 </resources>

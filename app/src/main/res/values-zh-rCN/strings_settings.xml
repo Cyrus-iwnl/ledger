@@ -32,4 +32,23 @@
     <string name="settings_startup_page_subtitle">&#21551;&#21160;&#26102;&#40664;&#35748;&#36827;&#20837;</string>
     <string name="settings_startup_page_option_home">&#20027;&#39029;</string>
     <string name="settings_startup_page_option_transaction">&#35760;&#36134;&#39029;</string>
+    <string name="settings_exchange_rate_title">汇率设置</string>
+    <string name="settings_exchange_rate_brief_format">USD · ¥%1$s</string>
+    <string name="settings_exchange_rate_menu_item_format">%1$s · ¥%2$s</string>
+    <string name="settings_exchange_rate_page_title">汇率设置</string>
+    <string name="settings_exchange_rate_value_format">¥%1$s</string>
+    <string name="settings_exchange_rate_dialog_title">设置汇率</string>
+    <string name="settings_exchange_rate_dialog_title_format">设置 %1$s 汇率</string>
+    <string name="settings_exchange_rate_dialog_subtitle">1 单位外币等于多少人民币</string>
+    <string name="settings_exchange_rate_dialog_subtitle_format">1 %1$s = ? 人民币</string>
+    <string name="settings_exchange_rate_input_hint_format">%1$s 对人民币</string>
+    <string name="settings_exchange_rate_invalid_decimals">最多支持 6 位小数</string>
+    <string name="settings_exchange_rate_invalid_positive">请输入正数</string>
+    <string name="settings_currency_name_cny">人民币（%1$s）</string>
+    <string name="settings_currency_name_hkd">港币（%1$s）</string>
+    <string name="settings_currency_name_twd">新台币（%1$s）</string>
+    <string name="settings_currency_name_usd">美元（%1$s）</string>
+    <string name="settings_currency_name_gbp">英镑（%1$s）</string>
+    <string name="settings_currency_name_eur">欧元（%1$s）</string>
+    <string name="settings_currency_name_jpy">日元（%1$s）</string>
 </resources>

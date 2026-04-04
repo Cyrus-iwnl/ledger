@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_exchange_rate_auto_fetch">自动</string>
+    <string name="settings_exchange_rate_auto_fetch_loading">加载中</string>
+    <string name="settings_exchange_rate_auto_fetch_success">已更新 %1$d 项汇率</string>
+    <string name="settings_exchange_rate_auto_fetch_failed">获取最新汇率失败</string>
+</resources>

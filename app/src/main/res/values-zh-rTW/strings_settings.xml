@@ -32,4 +32,23 @@
     <string name="settings_startup_page_subtitle">&#21855;&#21205;&#26178;&#38928;&#35373;&#36914;&#20837;</string>
     <string name="settings_startup_page_option_home">&#20027;&#38913;</string>
     <string name="settings_startup_page_option_transaction">&#35352;&#24115;&#38913;</string>
+    <string name="settings_exchange_rate_title">匯率設定</string>
+    <string name="settings_exchange_rate_brief_format">USD · ¥%1$s</string>
+    <string name="settings_exchange_rate_menu_item_format">%1$s · ¥%2$s</string>
+    <string name="settings_exchange_rate_page_title">匯率設定</string>
+    <string name="settings_exchange_rate_value_format">¥%1$s</string>
+    <string name="settings_exchange_rate_dialog_title">設定匯率</string>
+    <string name="settings_exchange_rate_dialog_title_format">設定 %1$s 匯率</string>
+    <string name="settings_exchange_rate_dialog_subtitle">1 單位外幣等於多少人民幣</string>
+    <string name="settings_exchange_rate_dialog_subtitle_format">1 %1$s = ? 人民幣</string>
+    <string name="settings_exchange_rate_input_hint_format">%1$s 對人民幣</string>
+    <string name="settings_exchange_rate_invalid_decimals">最多支援 6 位小數</string>
+    <string name="settings_exchange_rate_invalid_positive">請輸入正數</string>
+    <string name="settings_currency_name_cny">人民幣（%1$s）</string>
+    <string name="settings_currency_name_hkd">港幣（%1$s）</string>
+    <string name="settings_currency_name_twd">新台幣（%1$s）</string>
+    <string name="settings_currency_name_usd">美元（%1$s）</string>
+    <string name="settings_currency_name_gbp">英鎊（%1$s）</string>
+    <string name="settings_currency_name_eur">歐元（%1$s）</string>
+    <string name="settings_currency_name_jpy">日圓（%1$s）</string>
 </resources>

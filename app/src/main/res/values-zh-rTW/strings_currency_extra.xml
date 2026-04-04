@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_currency_name_krw">韓元 (%1$s)</string>
+    <string name="settings_currency_name_aud">澳幣 (%1$s)</string>
+    <string name="settings_currency_name_cad">加幣 (%1$s)</string>
+    <string name="settings_currency_name_sgd">新加坡幣 (%1$s)</string>
+    <string name="settings_currency_name_chf">瑞士法郎 (%1$s)</string>
+    <string name="settings_currency_name_thb">泰銖 (%1$s)</string>
+    <string name="settings_currency_name_mop">澳門元 (%1$s)</string>
+</resources>

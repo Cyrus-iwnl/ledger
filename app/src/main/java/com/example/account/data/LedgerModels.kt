@@ -12,13 +12,21 @@ enum class TransactionType {
     INCOME
 }
 
-enum class CurrencyCode(val code: String, val symbol: String) {
-    CNY("CNY", "\u00A5"),
-    USD("USD", "$"),
-    EUR("EUR", "\u20AC"),
-    GBP("GBP", "\u00A3"),
-    JPY("JPY", "\u00A5"),
-    HKD("HKD", "HK$")
+enum class CurrencyCode(val code: String, val symbol: String, val defaultRateToCny: Double) {
+    CNY("CNY", "\u00A5", 1.0),
+    HKD("HKD", "HK$", 0.92),
+    MOP("MOP", "MOP$", 0.90),
+    TWD("TWD", "NT$", 0.23),
+    USD("USD", "$", 7.20),
+    EUR("EUR", "\u20AC", 7.80),
+    GBP("GBP", "\u00A3", 9.10),
+    JPY("JPY", "\u00A5", 0.050),
+    KRW("KRW", "\u20A9", 0.0053),
+    AUD("AUD", "A$", 4.70),
+    CAD("CAD", "C$", 5.20),
+    SGD("SGD", "S$", 5.30),
+    CHF("CHF", "CHF", 8.20),
+    THB("THB", "\u0E3F", 0.20)
 }
 
 enum class LedgerBookType {
@@ -49,7 +57,8 @@ data class LedgerTransaction(
     val note: String,
     val timestampMillis: Long,
     val currency: CurrencyCode = CurrencyCode.CNY,
-    val refundedAmount: Double = 0.0
+    val refundedAmount: Double = 0.0,
+    val amountCny: Double = amount * currency.defaultRateToCny
 )
 
 data class DaySummary(
@@ -151,4 +160,8 @@ fun LedgerTransaction.originalExpenseAmount(): Double {
         return amount
     }
     return amount + refundedAmount
+}
+
+fun LedgerTransaction.amountInCny(): Double {
+    return amountCny
 }

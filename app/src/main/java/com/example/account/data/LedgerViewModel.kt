@@ -173,6 +173,18 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun getTotalExpense(): Double = repository.getTotalExpense()
 
+    fun getExchangeRateToCny(currency: CurrencyCode): Double {
+        return repository.getExchangeRateToCny(currency)
+    }
+
+    fun setExchangeRateToCny(currency: CurrencyCode, rate: Double) {
+        repository.setExchangeRateToCny(currency, rate)
+    }
+
+    fun getLastUsedCurrency(): CurrencyCode {
+        return repository.getLastUsedCurrency()
+    }
+
     private fun refreshLedgerState() {
         _ledgers.value = repository.getLedgers()
         _currentLedger.value = repository.getCurrentLedger()

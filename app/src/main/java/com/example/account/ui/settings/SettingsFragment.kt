@@ -47,6 +47,9 @@ class SettingsFragment : Fragment() {
         binding.ledgerItem.setOnClickListener {
             openLedgerSettings()
         }
+        binding.exchangeRateItem.setOnClickListener {
+            openExchangeRateSettings()
+        }
         viewModel.currentLedger.observe(viewLifecycleOwner) { book ->
             binding.ledgerValueText.text = book.name
         }
@@ -137,6 +140,17 @@ class SettingsFragment : Fragment() {
         binding.startupPageValueText.text = startupPageLabelFor(
             StartupPageManager.currentStartupPage(requireContext())
         )
+    }
+
+    private fun openExchangeRateSettings() {
+        parentFragmentManager.beginTransaction()
+            .replace(
+                R.id.fragment_container,
+                ExchangeRateSettingsFragment.newInstance(),
+                ExchangeRateSettingsFragment::class.java.name
+            )
+            .addToBackStack(ExchangeRateSettingsFragment::class.java.name)
+            .commit()
     }
 
     private fun labelFor(language: AppLanguage): String {

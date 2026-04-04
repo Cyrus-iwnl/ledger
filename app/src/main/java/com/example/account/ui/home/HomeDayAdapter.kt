@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.account.R
 import com.example.account.data.CategoryLocalizer
+import com.example.account.data.CurrencyCode
 import com.example.account.data.DaySummary
 import com.example.account.data.LedgerCategory
 import com.example.account.data.LedgerFormatters
@@ -119,6 +120,7 @@ class HomeDayAdapter(
             val name = row.findViewById<TextView>(R.id.category_name)
             val note = row.findViewById<TextView>(R.id.note_text)
             val amount = row.findViewById<TextView>(R.id.amount_text)
+            val amountCny = row.findViewById<TextView>(R.id.amount_cny_text)
             val refunded = row.findViewById<TextView>(R.id.refunded_text)
             val divider = row.findViewById<View>(R.id.row_divider)
             val localizedCategoryName = CategoryLocalizer.displayName(itemView.context, category)
@@ -170,6 +172,18 @@ class HomeDayAdapter(
                     itemView.context.getColor(R.color.income_color)
                 }
             )
+            if (transaction.currency != CurrencyCode.CNY) {
+                amountCny.visibility = View.VISIBLE
+                val cnySignedAmount = LedgerFormatters.signedMoney(
+                    value = transaction.amountCny,
+                    type = transaction.type,
+                    currency = CurrencyCode.CNY
+                )
+                amountCny.text = "($cnySignedAmount)"
+            } else {
+                amountCny.visibility = View.GONE
+                amountCny.text = ""
+            }
             if (transaction.type == TransactionType.EXPENSE && transaction.refundedAmount > 0.0) {
                 refunded.visibility = View.VISIBLE
                 refunded.text = itemView.context.getString(

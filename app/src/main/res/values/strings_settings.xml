@@ -32,4 +32,34 @@
     <string name="settings_startup_page_subtitle">Choose screen shown at launch</string>
     <string name="settings_startup_page_option_home">Home</string>
     <string name="settings_startup_page_option_transaction">Record</string>
+    <string name="settings_exchange_rate_title">Exchange Rates</string>
+    <string name="settings_exchange_rate_brief_format">USD \u00B7 \u00A5%1$s</string>
+    <string name="settings_exchange_rate_menu_item_format">%1$s \u00B7 \u00A5%2$s</string>
+    <string name="settings_exchange_rate_page_title">Exchange Rates</string>
+    <string name="settings_exchange_rate_value_format">\u00A5%1$s</string>
+    <string name="settings_exchange_rate_dialog_title">Set Exchange Rate</string>
+    <string name="settings_exchange_rate_dialog_title_format">Set %1$s Rate</string>
+    <string name="settings_exchange_rate_dialog_subtitle">1 unit equals how much CNY</string>
+    <string name="settings_exchange_rate_dialog_subtitle_format">1 %1$s = ? CNY</string>
+    <string name="settings_exchange_rate_input_hint_format">%1$s to CNY</string>
+    <string name="settings_exchange_rate_invalid_decimals">Up to 6 decimal places</string>
+    <string name="settings_exchange_rate_invalid_positive">Please enter a positive number</string>
+    <string name="settings_exchange_rate_auto_fetch">Auto</string>
+    <string name="settings_exchange_rate_auto_fetch_loading">...</string>
+    <string name="settings_exchange_rate_auto_fetch_success">Updated %1$d rates</string>
+    <string name="settings_exchange_rate_auto_fetch_failed">Failed to fetch latest rates</string>
+    <string name="settings_currency_name_cny">Chinese Yuan (%1$s)</string>
+    <string name="settings_currency_name_hkd">Hong Kong Dollar (%1$s)</string>
+    <string name="settings_currency_name_twd">New Taiwan Dollar (%1$s)</string>
+    <string name="settings_currency_name_usd">US Dollar (%1$s)</string>
+    <string name="settings_currency_name_gbp">British Pound (%1$s)</string>
+    <string name="settings_currency_name_eur">Euro (%1$s)</string>
+    <string name="settings_currency_name_jpy">Japanese Yen (%1$s)</string>
+    <string name="settings_currency_name_krw">South Korean Won (%1$s)</string>
+    <string name="settings_currency_name_aud">Australian Dollar (%1$s)</string>
+    <string name="settings_currency_name_cad">Canadian Dollar (%1$s)</string>
+    <string name="settings_currency_name_sgd">Singapore Dollar (%1$s)</string>
+    <string name="settings_currency_name_chf">Swiss Franc (%1$s)</string>
+    <string name="settings_currency_name_thb">Thai Baht (%1$s)</string>
+    <string name="settings_currency_name_mop">Macanese Pataca (%1$s)</string>
 </resources>

@@ -3,6 +3,7 @@ package com.example.account.ui.edit
 import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.HapticFeedbackConstants
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -120,7 +121,7 @@ class EditTransactionFragment : Fragment() {
         binding.timeCard.setOnClickListener {
             openDateTimePicker()
         }
-        binding.currencyButton.setOnClickListener {
+        binding.currencySymbol.setOnClickListener {
             openCurrencyPicker()
         }
 
@@ -135,6 +136,7 @@ class EditTransactionFragment : Fragment() {
             type = selectedType,
             categoryId = viewModel.categoriesFor(selectedType).firstOrNull()?.id.orEmpty(),
             amountText = "0",
+            currency = viewModel.getLastUsedCurrency(),
             note = "",
             dateMillis = selectedDateMillis
         )
@@ -656,7 +658,6 @@ class EditTransactionFragment : Fragment() {
             if (selectedType == TransactionType.EXPENSE) R.color.editor_tertiary else R.color.income_color
         )
         binding.amountPreview.setTextColor(amountColor)
-        binding.currencySymbol.setTextColor(amountColor)
     }
 
     private fun formatAmountForEditor(): String {
@@ -685,13 +686,24 @@ class EditTransactionFragment : Fragment() {
     }
 
     private fun updateCurrencyButtonText() {
-        binding.currencyButton.text = selectedCurrency.code
+        binding.currencySymbol.text = selectedCurrency.symbol
     }
 
     private fun openCurrencyPicker() {
-        val popup = PopupMenu(requireContext(), binding.currencyButton)
+        val popup = PopupMenu(
+            requireContext(),
+            binding.currencySymbol,
+            Gravity.END,
+            0,
+            R.style.Widget_Account_CurrencyPopupMenu
+        )
         CurrencyCode.values().forEachIndexed { index, currency ->
-            popup.menu.add(0, index, index, "${currency.code} (${currency.symbol})")
+            popup.menu.add(
+                0,
+                index,
+                index,
+                getString(currencyNameRes(currency), currency.symbol)
+            )
         }
         popup.setOnMenuItemClickListener { menuItem ->
             val target = CurrencyCode.values().getOrNull(menuItem.itemId) ?: return@setOnMenuItemClickListener true
@@ -699,7 +711,91 @@ class EditTransactionFragment : Fragment() {
             updateCurrencyButtonText()
             true
         }
+        applyPopupHorizontalOffset(popup, 10)
+        applyPopupMaxHeight(popup, CURRENCY_POPUP_MAX_HEIGHT_DP)
         popup.show()
+        applyPopupListMaxHeightAfterShow(popup, CURRENCY_POPUP_MAX_HEIGHT_DP)
+    }
+
+    private fun currencyNameRes(currency: CurrencyCode): Int {
+        return when (currency) {
+            CurrencyCode.CNY -> R.string.settings_currency_name_cny
+            CurrencyCode.HKD -> R.string.settings_currency_name_hkd
+            CurrencyCode.TWD -> R.string.settings_currency_name_twd
+            CurrencyCode.USD -> R.string.settings_currency_name_usd
+            CurrencyCode.GBP -> R.string.settings_currency_name_gbp
+            CurrencyCode.EUR -> R.string.settings_currency_name_eur
+            CurrencyCode.JPY -> R.string.settings_currency_name_jpy
+            CurrencyCode.KRW -> R.string.settings_currency_name_krw
+            CurrencyCode.AUD -> R.string.settings_currency_name_aud
+            CurrencyCode.CAD -> R.string.settings_currency_name_cad
+            CurrencyCode.SGD -> R.string.settings_currency_name_sgd
+            CurrencyCode.CHF -> R.string.settings_currency_name_chf
+            CurrencyCode.THB -> R.string.settings_currency_name_thb
+            CurrencyCode.MOP -> R.string.settings_currency_name_mop
+        }
+    }
+
+    private fun applyPopupHorizontalOffset(popup: PopupMenu, offsetDp: Int) {
+        runCatching {
+            val helperField = PopupMenu::class.java.getDeclaredField("mPopup")
+            helperField.isAccessible = true
+            val helper = helperField.get(popup)
+            val offsetPx = (offsetDp * resources.displayMetrics.density).toInt()
+            helper.javaClass
+                .getDeclaredMethod("setHorizontalOffset", Int::class.javaPrimitiveType)
+                .invoke(helper, offsetPx)
+        }
+    }
+
+    private fun applyPopupMaxHeight(popup: PopupMenu, maxHeightDp: Int) {
+        runCatching {
+            val helperField = PopupMenu::class.java.getDeclaredField("mPopup")
+            helperField.isAccessible = true
+            val helper = helperField.get(popup)
+            val maxHeightPx = (maxHeightDp * resources.displayMetrics.density).toInt()
+            val getPopupMethod = helper.javaClass.getDeclaredMethod("getPopup").apply {
+                isAccessible = true
+            }
+            val menuPopup = getPopupMethod.invoke(helper)
+            val directMethod = menuPopup.javaClass.methods.firstOrNull { method ->
+                method.name == "setHeight" && method.parameterTypes.size == 1
+            }
+            if (directMethod != null) {
+                directMethod.invoke(menuPopup, maxHeightPx)
+                return@runCatching
+            }
+            val popupWindowField = menuPopup.javaClass.getDeclaredField("mPopup").apply {
+                isAccessible = true
+            }
+            val popupWindow = popupWindowField.get(menuPopup)
+            popupWindow.javaClass
+                .getMethod("setHeight", Int::class.javaPrimitiveType)
+                .invoke(popupWindow, maxHeightPx)
+        }
+    }
+
+    private fun applyPopupListMaxHeightAfterShow(popup: PopupMenu, maxHeightDp: Int) {
+        runCatching {
+            val helperField = PopupMenu::class.java.getDeclaredField("mPopup")
+            helperField.isAccessible = true
+            val helper = helperField.get(popup)
+            val getPopupMethod = helper.javaClass.getDeclaredMethod("getPopup").apply {
+                isAccessible = true
+            }
+            val menuPopup = getPopupMethod.invoke(helper)
+            val getListViewMethod = menuPopup.javaClass.methods.firstOrNull { method ->
+                method.name == "getListView" && method.parameterTypes.isEmpty()
+            } ?: return@runCatching
+            val listView = getListViewMethod.invoke(menuPopup) as? android.widget.ListView ?: return@runCatching
+            val maxHeightPx = (maxHeightDp * resources.displayMetrics.density).toInt()
+            val currentParams = listView.layoutParams ?: return@runCatching
+            if (currentParams.height <= 0 || currentParams.height > maxHeightPx) {
+                currentParams.height = maxHeightPx
+                listView.layoutParams = currentParams
+                listView.requestLayout()
+            }
+        }
     }
 
     private fun formatDateTime(millis: Long): String {
@@ -915,7 +1011,7 @@ class EditTransactionFragment : Fragment() {
         amountText = "0"
         clearPendingCalculation()
         selectedDateMillis = savedDateMillis
-        selectedCurrency = CurrencyCode.CNY
+        selectedCurrency = viewModel.getLastUsedCurrency()
         binding.noteInput.setText("")
         updateDateButtonText()
         updateCurrencyButtonText()
@@ -1076,6 +1172,7 @@ class EditTransactionFragment : Fragment() {
         private const val MAX_RECORDED_INTEGER_DIGITS = 8
         private const val MAX_DECIMAL_DIGITS = 2
         private const val BACKSPACE_REPEAT_INTERVAL_MS = 60L
+        private const val CURRENCY_POPUP_MAX_HEIGHT_DP = 300
         private var symbolTypefaceResolved = false
         private var symbolTypeface: Typeface? = null
 
