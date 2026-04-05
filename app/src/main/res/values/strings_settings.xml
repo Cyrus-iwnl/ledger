@@ -69,4 +69,14 @@
     <string name="settings_currency_name_rub">Russian Ruble (%1$s)</string>
     <string name="settings_currency_name_brl">Brazilian Real (%1$s)</string>
     <string name="settings_currency_name_mxn">Mexican Peso (%1$s)</string>
+    <string name="settings_export_title">Export Data</string>
+    <string name="settings_import_title">Import Data</string>
+    <string name="settings_export_success">Exported %1$d ledgers</string>
+    <string name="settings_import_success">Imported %1$d ledgers, %2$d records</string>
+    <string name="settings_import_confirm_title">Import Data</string>
+    <string name="settings_import_confirm_subtitle">This will overwrite current ledger data.</string>
+    <string name="settings_import_confirm_description">After importing, the existing ledgers and records on this device will be replaced by the backup file.</string>
+    <string name="settings_import_confirm_action">Import now</string>
+    <string name="settings_data_action_failed">Operation failed</string>
+    <string name="settings_data_action_failed_with_reason">Operation failed: %1$s</string>
 </resources>

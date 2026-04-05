@@ -7,6 +7,8 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.account.PerfTrace
+import java.io.InputStream
+import java.io.OutputStream
 import java.time.YearMonth
 
 class LedgerViewModel(application: Application) : AndroidViewModel(application) {
@@ -192,6 +194,20 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun getLastUsedCurrency(): CurrencyCode {
         return repository.getLastUsedCurrency()
+    }
+
+    fun exportLedgersToZip(outputStream: OutputStream): LedgerExportSummary {
+        return repository.exportLedgersToZip(outputStream)
+    }
+
+    fun importLedgersFromZip(inputStream: InputStream): LedgerImportSummary {
+        return repository.importLedgersFromZip(inputStream)
+    }
+
+    fun refreshAfterImport() {
+        refreshLedgerState()
+        _monthlyBudget.value = loadCurrentBudget()
+        refresh()
     }
 
     private fun refreshLedgerState() {

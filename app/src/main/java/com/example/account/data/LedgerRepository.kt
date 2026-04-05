@@ -758,6 +758,258 @@ class LedgerRepository(context: Context) {
             .sumOf { it.amountInCny() }
     }
 
+    fun exportLedgersToZip(outputStream: OutputStream): LedgerExportSummary = synchronized(lock) {
+        val snapshotLedgers = ledgers.toList()
+        ZipOutputStream(outputStream.buffered()).use { zipOutputStream ->
+            snapshotLedgers.forEachIndexed { index, ledger ->
+                val payload = buildBackupPayload(ledger)
+                val entryName = exportEntryName(index, ledger.id)
+                val entryJson = buildBackupJson(payload)
+                zipOutputStream.putNextEntry(ZipEntry(entryName))
+                zipOutputStream.write(entryJson.toString().toByteArray(Charsets.UTF_8))
+                zipOutputStream.closeEntry()
+            }
+            zipOutputStream.finish()
+        }
+        LedgerExportSummary(ledgerCount = snapshotLedgers.size)
+    }
+
+    fun importLedgersFromZip(inputStream: InputStream): LedgerImportSummary = synchronized(lock) {
+        val parsedPayloads = readBackupPayloads(inputStream)
+        if (parsedPayloads.isEmpty()) {
+            throw IllegalArgumentException("Backup zip does not contain valid ledger files.")
+        }
+
+        val dedupedPayloads = linkedMapOf<String, BackupLedgerPayload>()
+        parsedPayloads.forEach { payload ->
+            if (!dedupedPayloads.containsKey(payload.ledger.id)) {
+                dedupedPayloads[payload.ledger.id] = payload
+            }
+        }
+        if (dedupedPayloads.isEmpty()) {
+            throw IllegalArgumentException("Backup zip does not contain valid ledgers.")
+        }
+
+        val importedPayloads = dedupedPayloads.values.toList()
+        val importedLedgers = importedPayloads.map { it.ledger }
+        val importedCurrentLedgerId = importedPayloads.firstOrNull { it.isCurrent }?.ledger?.id
+
+        clearAllLedgerDataFiles()
+        clearAllBudgetPrefs()
+
+        ledgers = importedLedgers.toMutableList()
+        currentLedgerId = importedCurrentLedgerId
+            ?.takeIf { currentId -> importedLedgers.any { it.id == currentId } }
+            ?: importedLedgers.first().id
+        persistLedgerState()
+
+        restoreImportedBudgetPrefs(importedPayloads)
+        importedPayloads.forEach { payload ->
+            persist(payload.transactions, payload.ledger.id)
+        }
+        syncNextTransactionId()
+
+        return LedgerImportSummary(
+            ledgerCount = importedLedgers.size,
+            transactionCount = importedPayloads.sumOf { it.transactions.size }
+        )
+    }
+
+    private fun readBackupPayloads(inputStream: InputStream): List<BackupLedgerPayload> {
+        val payloads = mutableListOf<BackupLedgerPayload>()
+        ZipInputStream(inputStream.buffered()).use { zipInputStream ->
+            var entry = zipInputStream.nextEntry
+            while (entry != null) {
+                if (!entry.isDirectory && entry.name.lowercase(Locale.US).endsWith(BACKUP_ENTRY_SUFFIX)) {
+                    val content = zipInputStream.readBytes().toString(Charsets.UTF_8)
+                    payloads.add(parseBackupPayload(content, entry.name))
+                }
+                zipInputStream.closeEntry()
+                entry = zipInputStream.nextEntry
+            }
+        }
+        return payloads
+    }
+
+    private fun parseBackupPayload(content: String, entryName: String): BackupLedgerPayload {
+        val root = runCatching { JSONObject(content) }
+            .getOrElse { throwable ->
+                throw IllegalArgumentException("Invalid ledger file: $entryName", throwable)
+            }
+
+        val ledgerObject = root.optJSONObject("ledger")
+            ?: throw IllegalArgumentException("Missing ledger metadata in: $entryName")
+        val ledgerId = ledgerObject.optString("id").trim()
+        val ledgerName = ledgerObject.optString("name").trim()
+        if (ledgerId.isBlank() || ledgerName.isBlank()) {
+            throw IllegalArgumentException("Invalid ledger metadata in: $entryName")
+        }
+
+        val ledger = LedgerBook(
+            id = ledgerId,
+            name = ledgerName,
+            type = ledgerObject.optString("type").toLedgerBookTypeOrDefault()
+        )
+
+        val transactionsArray = root.optJSONArray("transactions") ?: JSONArray()
+        val transactions = buildList {
+            for (index in 0 until transactionsArray.length()) {
+                val transactionObject = transactionsArray.optJSONObject(index)
+                    ?: throw IllegalArgumentException("Invalid transaction payload in: $entryName")
+                val transaction = runCatching {
+                    transactionObject.toTransaction()
+                }.getOrElse { throwable ->
+                    throw IllegalArgumentException("Failed to parse transaction in: $entryName", throwable)
+                }
+                add(transaction)
+            }
+        }
+
+        val budgetPrefs = linkedMapOf<String, String>()
+        val budgetObject = root.optJSONObject("budgetPrefs")
+        if (budgetObject != null) {
+            val iterator = budgetObject.keys()
+            while (iterator.hasNext()) {
+                val key = iterator.next()
+                if (key.isBlank()) {
+                    continue
+                }
+                val value = budgetObject.opt(key) as? String ?: continue
+                budgetPrefs[key] = value
+            }
+        }
+
+        return BackupLedgerPayload(
+            ledger = ledger,
+            isCurrent = root.optBoolean("isCurrent", false),
+            transactions = transactions,
+            budgetPrefs = budgetPrefs
+        )
+    }
+
+    private fun buildBackupPayload(ledger: LedgerBook): BackupLedgerPayload {
+        return BackupLedgerPayload(
+            ledger = ledger,
+            isCurrent = ledger.id == currentLedgerId,
+            transactions = loadTransactionsInternal(ledger.id),
+            budgetPrefs = collectBudgetPrefsForLedger(ledger.id)
+        )
+    }
+
+    private fun buildBackupJson(payload: BackupLedgerPayload): JSONObject {
+        val transactionsArray = JSONArray().apply {
+            payload.transactions.forEach { put(it.toJson()) }
+        }
+        val budgetPrefsObject = JSONObject().apply {
+            payload.budgetPrefs.forEach { (key, value) ->
+                put(key, value)
+            }
+        }
+        return JSONObject().apply {
+            put("backupVersion", BACKUP_VERSION)
+            put(
+                "ledger",
+                JSONObject().apply {
+                    put("id", payload.ledger.id)
+                    put("name", payload.ledger.name)
+                    put("type", payload.ledger.type.name)
+                }
+            )
+            put("isCurrent", payload.isCurrent)
+            put("transactions", transactionsArray)
+            put("budgetPrefs", budgetPrefsObject)
+        }
+    }
+
+    private fun exportEntryName(index: Int, ledgerId: String): String {
+        val normalizedId = ledgerId.lowercase(Locale.US).replace(Regex("[^a-z0-9._-]"), "_")
+        val safeId = normalizedId.ifBlank { "ledger" }
+        return "ledger_${index + 1}_$safeId$BACKUP_ENTRY_SUFFIX"
+    }
+
+    private fun collectBudgetPrefsForLedger(ledgerId: String): Map<String, String> {
+        val monthlyPrefix = "$KEY_MONTHLY_BUDGET_PREFIX${ledgerId}_"
+        val yearlyPrefix = "$KEY_YEARLY_BUDGET_PREFIX${ledgerId}_"
+        val projectKey = projectBudgetKey(ledgerId)
+
+        val keys = mutableSetOf<String>()
+        prefs.all.keys.forEach { key ->
+            if (key.startsWith(monthlyPrefix) || key.startsWith(yearlyPrefix) || key == projectKey) {
+                keys.add(key)
+            }
+        }
+        if (ledgerId == DEFAULT_LEDGER_ID) {
+            prefs.all.keys.forEach { key ->
+                if (key == KEY_MONTHLY_BUDGET_LEGACY || isLegacyMonthBudgetKey(key)) {
+                    keys.add(key)
+                }
+            }
+        }
+
+        return buildMap {
+            keys.forEach { key ->
+                val value = prefs.all[key] as? String ?: return@forEach
+                put(key, value)
+            }
+        }
+    }
+
+    private fun clearAllLedgerDataFiles() {
+        transactionsCache.clear()
+        defaultLedgerFile.takeIf { it.exists() }?.delete()
+        appContext.filesDir.listFiles()
+            ?.asSequence()
+            ?.filter { file ->
+                file.name.startsWith(LEDGER_FILE_PREFIX) && file.name.endsWith(LEDGER_FILE_SUFFIX)
+            }
+            ?.forEach { file ->
+                file.delete()
+            }
+    }
+
+    private fun clearAllBudgetPrefs() {
+        val editor = prefs.edit()
+        prefs.all.keys.forEach { key ->
+            if (
+                key.startsWith(KEY_MONTHLY_BUDGET_PREFIX) ||
+                key.startsWith(KEY_YEARLY_BUDGET_PREFIX) ||
+                key.startsWith(KEY_PROJECT_BUDGET_PREFIX) ||
+                key == KEY_MONTHLY_BUDGET_LEGACY
+            ) {
+                editor.remove(key)
+            }
+        }
+        editor.apply()
+    }
+
+    private fun restoreImportedBudgetPrefs(payloads: List<BackupLedgerPayload>) {
+        val editor = prefs.edit()
+        payloads.forEach { payload ->
+            payload.budgetPrefs.forEach { (key, value) ->
+                if (isAllowedBudgetPrefKey(key, payload.ledger.id)) {
+                    editor.putString(key, value)
+                }
+            }
+        }
+        editor.apply()
+    }
+
+    private fun isAllowedBudgetPrefKey(key: String, ledgerId: String): Boolean {
+        if (key.startsWith("$KEY_MONTHLY_BUDGET_PREFIX${ledgerId}_")) {
+            return true
+        }
+        if (key.startsWith("$KEY_YEARLY_BUDGET_PREFIX${ledgerId}_")) {
+            return true
+        }
+        if (key == projectBudgetKey(ledgerId)) {
+            return true
+        }
+        if (ledgerId == DEFAULT_LEDGER_ID && (key == KEY_MONTHLY_BUDGET_LEGACY || isLegacyMonthBudgetKey(key))) {
+            return true
+        }
+        return false
+    }
+
     private fun syncBuiltInDataAndNextId() {
         PerfTrace.measure("LedgerRepository.syncBuiltInDataAndNextId(current=$currentLedgerId)") {
             ensureSeedDataForSampleLedger()
@@ -1337,6 +1589,8 @@ class LedgerRepository(context: Context) {
         private const val KEY_EXCHANGE_RATE_PREFIX = "exchange_rate_"
         private const val KEY_LAST_USED_CURRENCY = "last_used_currency"
         private const val MONTHLY_BUDGET_CLEARED_MARKER = "__cleared__"
+        private const val BACKUP_VERSION = 1
+        private const val BACKUP_ENTRY_SUFFIX = ".json"
     }
 }
 
