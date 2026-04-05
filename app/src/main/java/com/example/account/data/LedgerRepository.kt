@@ -127,7 +127,7 @@ class LedgerRepository(context: Context) {
         LedgerCategory("income_bonus", "Bonus", TransactionType.INCOME, android.R.drawable.ic_input_add, "savings", Color.parseColor("#ECC344")),
         LedgerCategory("income_investment", "Investment", TransactionType.INCOME, android.R.drawable.ic_menu_send, "trending_up", Color.parseColor("#6DA5E8")),
         LedgerCategory("income_refund", "Refund", TransactionType.INCOME, android.R.drawable.ic_menu_revert, "undo", Color.parseColor("#B0D057")),
-        LedgerCategory("income_other", "Other", TransactionType.INCOME, android.R.drawable.ic_menu_share, "paid", Color.parseColor("#57CDCB"))
+        LedgerCategory("income_other", "Other", TransactionType.INCOME, android.R.drawable.ic_menu_help, "more_horiz", Color.parseColor("#57CDCB"))
     )
 
     private var _categories: List<LedgerCategory> = emptyList()
@@ -726,13 +726,18 @@ class LedgerRepository(context: Context) {
             buildList {
                 for (i in 0 until array.length()) {
                     val obj = array.getJSONObject(i)
+                    val id = obj.getString("id")
+                    var glyph = obj.optString("iconGlyph", "")
+                    if (id == "income_other" && glyph == "paid") {
+                        glyph = "more_horiz"
+                    }
                     add(
                         LedgerCategory(
-                            id = obj.getString("id"),
+                            id = id,
                             name = obj.getString("name"),
                             type = TransactionType.valueOf(obj.getString("type")),
                             iconRes = android.R.drawable.ic_menu_help,
-                            iconGlyph = obj.optString("iconGlyph", ""),
+                            iconGlyph = glyph,
                             accentColor = obj.optInt("accentColor", Color.parseColor("#888888"))
                         )
                     )

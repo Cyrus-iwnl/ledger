@@ -69,6 +69,7 @@
     <string name="settings_currency_name_rub">Russian Ruble (%1$s)</string>
     <string name="settings_currency_name_brl">Brazilian Real (%1$s)</string>
     <string name="settings_currency_name_mxn">Mexican Peso (%1$s)</string>
+    <string name="settings_data_transfer_title">Data Transfer</string>
     <string name="settings_export_title">Export Data</string>
     <string name="settings_import_title">Import Data</string>
     <string name="settings_export_success">Exported %1$d ledgers</string>

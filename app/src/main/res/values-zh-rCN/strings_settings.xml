@@ -52,4 +52,15 @@
     <string name="settings_currency_name_gbp">英镑（%1$s）</string>
     <string name="settings_currency_name_eur">欧元（%1$s）</string>
     <string name="settings_currency_name_jpy">日元（%1$s）</string>
+    <string name="settings_data_transfer_title">导入导出</string>
+    <string name="settings_export_title">导出数据</string>
+    <string name="settings_import_title">导入数据</string>
+    <string name="settings_export_success">已成功导出 %1$d 个账本</string>
+    <string name="settings_import_success">已成功导入 %1$d 个账本，%2$d 条记录</string>
+    <string name="settings_import_confirm_title">导入数据</string>
+    <string name="settings_import_confirm_subtitle">这将覆盖当前的账本数据。</string>
+    <string name="settings_import_confirm_description">导入后，此设备上的现有账本和记录将被备份文件替换。</string>
+    <string name="settings_import_confirm_action">立即导入</string>
+    <string name="settings_data_action_failed">操作失败</string>
+    <string name="settings_data_action_failed_with_reason">操作失败：%1$s</string>
 </resources>
