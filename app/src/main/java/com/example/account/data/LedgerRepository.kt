@@ -102,7 +102,7 @@ class LedgerRepository(context: Context) {
         }
     }
 
-    val categories: List<LedgerCategory> = listOf(
+    private val defaultCategories: List<LedgerCategory> = listOf(
         LedgerCategory("expense_meals", "Meals", TransactionType.EXPENSE, R.drawable.ic_dashboard_restaurant_24, "restaurant", Color.parseColor("#FF9F89")),
         LedgerCategory("expense_snacks", "Snacks", TransactionType.EXPENSE, android.R.drawable.ic_menu_gallery, "icecream", Color.parseColor("#F4C571")),
         LedgerCategory("expense_drinks", "Drinks", TransactionType.EXPENSE, android.R.drawable.ic_menu_gallery, "local_cafe", Color.parseColor("#DDA77B")),
@@ -129,10 +129,14 @@ class LedgerRepository(context: Context) {
         LedgerCategory("income_refund", "Refund", TransactionType.INCOME, android.R.drawable.ic_menu_revert, "undo", Color.parseColor("#B0D057")),
         LedgerCategory("income_other", "Other", TransactionType.INCOME, android.R.drawable.ic_menu_share, "paid", Color.parseColor("#57CDCB"))
     )
+
+    private var _categories: List<LedgerCategory> = emptyList()
+    val categories: List<LedgerCategory> get() = _categories
     init {
         PerfTrace.measure("LedgerRepository.init") {
             synchronized(lock) {
                 loadLedgerState()
+                _categories = loadCustomCategories()
                 syncBuiltInDataAndNextId()
             }
         }
@@ -643,7 +647,117 @@ class LedgerRepository(context: Context) {
     }
 
     fun categoriesFor(type: TransactionType): List<LedgerCategory> {
-        return categories.filter { it.type == type }
+        return _categories.filter { it.type == type }
+    }
+
+    fun addCustomCategory(name: String, iconGlyph: String, accentColor: Int, type: TransactionType): LedgerCategory = synchronized(lock) {
+        val id = "custom_${type.name.lowercase()}_${UUID.randomUUID().toString().replace("-", "").take(8)}"
+        val category = LedgerCategory(
+            id = id,
+            name = name.trim(),
+            type = type,
+            iconRes = android.R.drawable.ic_menu_help,
+            iconGlyph = iconGlyph,
+            accentColor = accentColor
+        )
+        val currentList = _categories.toMutableList()
+        // Insert before the "other" category of same type
+        val otherIndex = currentList.indexOfFirst { it.id == "${type.name.lowercase()}_other" }
+        if (otherIndex >= 0) {
+            currentList.add(otherIndex, category)
+        } else {
+            currentList.add(category)
+        }
+        _categories = currentList
+        persistCustomCategories()
+        category
+    }
+
+    fun deleteCategory(categoryId: String) = synchronized(lock) {
+        val category = _categories.firstOrNull { it.id == categoryId } ?: return@synchronized
+        // Don't allow deleting built-in "other" categories
+        if (categoryId == "expense_other" || categoryId == "income_other") return@synchronized
+        // Migrate all transactions of this category to the "other" category
+        val otherCategoryId = if (category.type == TransactionType.EXPENSE) "expense_other" else "income_other"
+        migrateTransactionsCategory(categoryId, otherCategoryId)
+        // Remove the category
+        _categories = _categories.filter { it.id != categoryId }
+        persistCustomCategories()
+    }
+
+    fun reorderCategories(type: TransactionType, orderedIds: List<String>) = synchronized(lock) {
+        val otherType = _categories.filter { it.type != type }
+        val thisType = _categories.filter { it.type == type }
+        val idToCategory = thisType.associateBy { it.id }
+        val reordered = orderedIds.mapNotNull { idToCategory[it] }
+        // Add any categories not in the ordered list (shouldn't happen, but safety)
+        val reorderedIds = reordered.map { it.id }.toSet()
+        val remaining = thisType.filter { it.id !in reorderedIds }
+        _categories = otherType + reordered + remaining
+        persistCustomCategories()
+    }
+
+    private fun migrateTransactionsCategory(fromCategoryId: String, toCategoryId: String) {
+        // Migrate in all ledgers
+        val allLedgerIds = ledgers.map { it.id }
+        for (ledgerId in allLedgerIds) {
+            val transactions = loadTransactionsInternal(ledgerId)
+            val needsMigration = transactions.any { it.categoryId == fromCategoryId }
+            if (needsMigration) {
+                val migrated = transactions.map { tx ->
+                    if (tx.categoryId == fromCategoryId) {
+                        tx.copy(categoryId = toCategoryId)
+                    } else {
+                        tx
+                    }
+                }
+                persist(migrated, ledgerId)
+            }
+        }
+    }
+
+    private fun loadCustomCategories(): List<LedgerCategory> {
+        val stored = prefs.getString(KEY_CUSTOM_CATEGORIES, null)
+        if (stored.isNullOrBlank()) {
+            return defaultCategories.toList()
+        }
+        return try {
+            val array = JSONArray(stored)
+            buildList {
+                for (i in 0 until array.length()) {
+                    val obj = array.getJSONObject(i)
+                    add(
+                        LedgerCategory(
+                            id = obj.getString("id"),
+                            name = obj.getString("name"),
+                            type = TransactionType.valueOf(obj.getString("type")),
+                            iconRes = android.R.drawable.ic_menu_help,
+                            iconGlyph = obj.optString("iconGlyph", ""),
+                            accentColor = obj.optInt("accentColor", Color.parseColor("#888888"))
+                        )
+                    )
+                }
+            }
+        } catch (e: Throwable) {
+            Log.w(TAG, "Failed to load custom categories", e)
+            defaultCategories.toList()
+        }
+    }
+
+    private fun persistCustomCategories() {
+        val array = JSONArray()
+        _categories.forEach { cat ->
+            array.put(JSONObject().apply {
+                put("id", cat.id)
+                put("name", cat.name)
+                put("type", cat.type.name)
+                put("iconGlyph", cat.iconGlyph)
+                put("accentColor", cat.accentColor)
+            })
+        }
+        prefs.edit()
+            .putString(KEY_CUSTOM_CATEGORIES, array.toString())
+            .apply()
     }
 
     fun isCurrentLedgerProject(): Boolean = synchronized(lock) {
@@ -1588,6 +1702,7 @@ class LedgerRepository(context: Context) {
         private const val KEY_PROJECT_BUDGET_PREFIX = "project_budget_"
         private const val KEY_EXCHANGE_RATE_PREFIX = "exchange_rate_"
         private const val KEY_LAST_USED_CURRENCY = "last_used_currency"
+        private const val KEY_CUSTOM_CATEGORIES = "custom_categories_v1"
         private const val MONTHLY_BUDGET_CLEARED_MARKER = "__cleared__"
         private const val BACKUP_VERSION = 1
         private const val BACKUP_ENTRY_SUFFIX = ".json"

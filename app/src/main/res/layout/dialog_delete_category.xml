@@ -55,28 +55,19 @@
                         android:id="@+id/delete_title_text"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/dialog_delete_title"
+                        android:text="@string/dialog_delete_category_title"
                         android:textColor="@color/text_primary"
                         android:textSize="18sp"
                         android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/delete_subtitle_text"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
-                        android:visibility="gone"
-                        android:textColor="@color/text_hint"
-                        android:textSize="12sp" />
                 </LinearLayout>
             </LinearLayout>
 
             <TextView
-                android:id="@+id/delete_description_text"
+                android:id="@+id/migration_message"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
-                android:text="@string/dialog_delete_description"
+                android:text="@string/dialog_delete_category_subtitle"
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
 
@@ -98,7 +89,7 @@
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
                     android:stateListAnimator="@null"
-                    android:text="@string/dialog_delete_cancel_keep"
+                    android:text="@string/cancel"
                     android:textColor="@color/text_secondary"
                     android:textSize="15sp"
                     android:textStyle="bold" />

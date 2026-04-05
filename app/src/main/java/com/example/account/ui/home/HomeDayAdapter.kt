@@ -136,7 +136,7 @@ class HomeDayAdapter(
                 icon.visibility = View.GONE
                 iconSymbol.typeface = symbolTypeface
                 iconSymbol.fontFeatureSettings = "'liga'"
-                iconSymbol.text = category?.iconGlyph
+                iconSymbol.text = CategoryLocalizer.normalizeIconGlyph(category?.iconGlyph.orEmpty())
                 iconSymbol.contentDescription = localizedCategoryName
                 iconSymbol.setTextColor(typeColor)
             } else {

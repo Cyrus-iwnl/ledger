@@ -109,11 +109,31 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
         return true
     }
 
+    private val _categoriesChanged = MutableLiveData<Long>(0L)
+    val categoriesChanged: LiveData<Long> = _categoriesChanged
+
     fun categoriesFor(type: TransactionType): List<LedgerCategory> = repository.categoriesFor(type)
 
     fun getAllCategories(): List<LedgerCategory> = repository.getAllCategories()
 
     fun getAllTransactions(): List<LedgerTransaction> = repository.getAllTransactions()
+
+    fun addCustomCategory(name: String, iconGlyph: String, accentColor: Int, type: TransactionType): LedgerCategory {
+        val category = repository.addCustomCategory(name, iconGlyph, accentColor, type)
+        _categoriesChanged.value = System.currentTimeMillis()
+        return category
+    }
+
+    fun deleteCategory(categoryId: String) {
+        repository.deleteCategory(categoryId)
+        _categoriesChanged.value = System.currentTimeMillis()
+        refresh()
+    }
+
+    fun reorderCategories(type: TransactionType, orderedIds: List<String>) {
+        repository.reorderCategories(type, orderedIds)
+        _categoriesChanged.value = System.currentTimeMillis()
+    }
 
     fun getDraftForTransaction(id: Long): TransactionDraft? = repository.getDraftForTransaction(id)
 

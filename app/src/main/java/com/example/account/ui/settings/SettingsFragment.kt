@@ -209,6 +209,7 @@ class SettingsFragment : Fragment() {
 
         titleText.text = getString(R.string.settings_import_confirm_title)
         subtitleText.text = getString(R.string.settings_import_confirm_subtitle)
+        subtitleText.visibility = View.VISIBLE
         descriptionText.text = getString(R.string.settings_import_confirm_description)
         confirmButton.text = getString(R.string.settings_import_confirm_action)
 

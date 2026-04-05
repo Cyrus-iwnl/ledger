@@ -1,9 +1,24 @@
-﻿package com.example.account.data
+package com.example.account.data
 
 import android.content.Context
 import com.example.account.R
 
 object CategoryLocalizer {
+
+    private val iconGlyphAliases = mapOf(
+        "discount" to "local_offer",
+        "insect_control" to "pest_control",
+        "leaf" to "eco",
+        "flower" to "local_florist",
+        "gamepad" to "sports_esports",
+        "tag" to "sell",
+        "face_smile" to "mood",
+        "health_and_beauty" to "spa",
+        "eye_tracking" to "visibility",
+        "deployed_code" to "code",
+        "package_2" to "inventory_2",
+        "conveyor_belt" to "local_shipping"
+    )
 
     fun displayName(context: Context, category: LedgerCategory?): String {
         val fallback = category?.name ?: context.getString(R.string.category_uncategorized)
@@ -42,6 +57,12 @@ object CategoryLocalizer {
             else -> null
         }
         return if (resId == null) fallback else context.getString(resId)
+    }
+
+    fun normalizeIconGlyph(glyph: String): String {
+        val trimmed = glyph.trim()
+        if (trimmed.isEmpty()) return trimmed
+        return iconGlyphAliases[trimmed] ?: trimmed
     }
 }
 

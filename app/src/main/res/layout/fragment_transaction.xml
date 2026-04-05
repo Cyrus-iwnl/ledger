@@ -9,12 +9,10 @@
         android:fitsSystemWindows="true"
         tools:context=".ui.edit.EditTransactionFragment">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/header_bar"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
             android:paddingStart="16dp"
             android:paddingTop="8dp"
             android:paddingEnd="16dp"
@@ -23,106 +21,113 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
-        <FrameLayout
+        <ImageButton
+                android:id="@+id/back_button"
                 android:layout_width="40dp"
-                android:layout_height="40dp">
-
-            <ImageButton
-                    android:id="@+id/back_button"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="@drawable/bg_nav_chip"
-                    android:contentDescription="@string/back"
-                    android:padding="8dp"
-                    android:src="@drawable/ic_arrow_back_24"
-                    app:tint="@color/text_primary" />
-        </FrameLayout>
+                android:layout_height="40dp"
+                android:background="@drawable/bg_nav_chip"
+                android:contentDescription="@string/back"
+                android:padding="8dp"
+                android:src="@drawable/ic_arrow_back_24"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="@color/text_primary" />
 
         <FrameLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1">
+                android:id="@+id/type_toggle"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_editor_toggle_group"
+                android:padding="4dp"
+                android:stateListAnimator="@null"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
 
-            <FrameLayout
-                    android:id="@+id/type_toggle"
+            <View
+                    android:id="@+id/type_toggle_thumb"
+                    android:layout_width="0dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="start|center_vertical"
+                    android:background="@drawable/bg_editor_toggle_selected" />
+
+            <LinearLayout
                     android:layout_width="wrap_content"
-                    android:layout_height="40dp"
-                    android:layout_gravity="center"
-                    android:background="@drawable/bg_editor_toggle_group"
-                    android:padding="4dp"
-                    android:stateListAnimator="@null">
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="horizontal">
 
-                <View
-                        android:id="@+id/type_toggle_thumb"
-                        android:layout_width="0dp"
+                <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/expense_button"
+                        android:layout_width="88dp"
                         android:layout_height="32dp"
-                        android:layout_gravity="start|center_vertical"
-                        android:background="@drawable/bg_editor_toggle_selected" />
-
-                <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
+                        android:layout_gravity="center_vertical"
+                        android:background="@android:color/transparent"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:fontFamily="sans-serif-medium"
                         android:gravity="center"
-                        android:orientation="horizontal">
+                        android:includeFontPadding="false"
+                        android:lineSpacingExtra="0dp"
+                        android:minHeight="0dp"
+                        android:singleLine="true"
+                        android:text="@string/expense"
+                        android:textColor="#2D3335"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
 
-                    <androidx.appcompat.widget.AppCompatTextView
-                            android:id="@+id/expense_button"
-                            android:layout_width="88dp"
-                            android:layout_height="32dp"
-                            android:layout_gravity="center_vertical"
-                            android:background="@android:color/transparent"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:fontFamily="sans-serif-medium"
-                            android:gravity="center"
-                            android:includeFontPadding="false"
-                            android:lineSpacingExtra="0dp"
-                            android:minHeight="0dp"
-                            android:singleLine="true"
-                            android:text="@string/expense"
-                            android:textColor="#2D3335"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
-                    <androidx.appcompat.widget.AppCompatTextView
-                            android:id="@+id/income_button"
-                            android:layout_width="88dp"
-                            android:layout_height="32dp"
-                            android:layout_gravity="center_vertical"
-                            android:background="@android:color/transparent"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:fontFamily="sans-serif-medium"
-                            android:gravity="center"
-                            android:includeFontPadding="false"
-                            android:lineSpacingExtra="0dp"
-                            android:minHeight="0dp"
-                            android:singleLine="true"
-                            android:text="@string/income"
-                            android:textAlignment="center"
-                            android:textColor="#5A6062"
-                            android:textSize="14sp"
-                            android:textStyle="normal" />
-                </LinearLayout>
-            </FrameLayout>
+                <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/income_button"
+                        android:layout_width="88dp"
+                        android:layout_height="32dp"
+                        android:layout_gravity="center_vertical"
+                        android:background="@android:color/transparent"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:fontFamily="sans-serif-medium"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:lineSpacingExtra="0dp"
+                        android:minHeight="0dp"
+                        android:singleLine="true"
+                        android:text="@string/income"
+                        android:textAlignment="center"
+                        android:textColor="#5A6062"
+                        android:textSize="14sp"
+                        android:textStyle="normal" />
+            </LinearLayout>
         </FrameLayout>
 
-        <FrameLayout
+        <ImageButton
+                android:id="@+id/edit_category_button"
                 android:layout_width="40dp"
-                android:layout_height="40dp">
+                android:layout_height="40dp"
+                android:background="@drawable/bg_nav_chip"
+                android:contentDescription="@string/edit_categories"
+                android:padding="8dp"
+                android:src="@drawable/ic_category_24"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/delete_button"
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="@color/text_primary" />
 
-            <ImageButton
-                    android:id="@+id/delete_button"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="@drawable/bg_nav_chip"
-                    android:contentDescription="@string/delete_transaction"
-                    android:padding="8dp"
-                    android:src="@drawable/ic_editor_delete_24"
-                    app:tint="@color/text_primary"
-                    android:visibility="gone" />
-        </FrameLayout>
-    </LinearLayout>
+        <ImageButton
+                android:id="@+id/delete_button"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_nav_chip"
+                android:contentDescription="@string/delete_transaction"
+                android:padding="8dp"
+                android:src="@drawable/ic_editor_delete_24"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="@color/text_primary" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
 
     <com.google.android.material.card.MaterialCardView
             android:id="@+id/category_card"

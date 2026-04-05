@@ -1044,7 +1044,7 @@ class InsightsFragment : Fragment() {
             itemBinding.categoryName.text = slice.name
             itemBinding.categoryAmount.text = money(slice.amount)
             itemBinding.categoryPercent.text = formatPercent(slice.ratio)
-            itemBinding.categoryIcon.text = slice.iconGlyph.ifBlank { "payments" }
+            itemBinding.categoryIcon.text = CategoryLocalizer.normalizeIconGlyph(slice.iconGlyph.ifBlank { "payments" })
             itemBinding.categoryItemRoot.alpha = if (selectedId == null || selectedId == slice.categoryId) 1f else 0.85f
 
             background(itemBinding.categoryIconContainer, ColorUtils.setAlphaComponent(slice.accentColor, 0x24), 16f)
@@ -1090,7 +1090,7 @@ class InsightsFragment : Fragment() {
             InsightsCategorySlice(
                 categoryId = categoryId,
                 name = category?.let { CategoryLocalizer.nameForId(requireContext(), it.id, it.name) } ?: text.other,
-                iconGlyph = category?.iconGlyph.orEmpty().ifBlank { "payments" },
+                iconGlyph = CategoryLocalizer.normalizeIconGlyph(category?.iconGlyph.orEmpty().ifBlank { "payments" }),
                 amount = amount,
                 ratio = if (total > 0.0) amount / total else 0.0,
                 accentColor = category?.accentColor ?: color(R.color.insights_red_400)

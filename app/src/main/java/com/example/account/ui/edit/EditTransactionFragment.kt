@@ -115,6 +115,10 @@ class EditTransactionFragment : Fragment() {
             }
         }
 
+        binding.editCategoryButton.setOnClickListener {
+            (activity as? MainActivity)?.openCategoryManage(selectedType)
+        }
+
         binding.expenseButton.setOnClickListener { setType(TransactionType.EXPENSE) }
         binding.incomeButton.setOnClickListener { setType(TransactionType.INCOME) }
 
@@ -264,7 +268,7 @@ class EditTransactionFragment : Fragment() {
             cell.iconImage.visibility = View.GONE
             cell.iconSymbol.typeface = symbolTypeface
             cell.iconSymbol.fontFeatureSettings = "'liga'"
-            cell.iconSymbol.text = category.iconGlyph
+            cell.iconSymbol.text = CategoryLocalizer.normalizeIconGlyph(category.iconGlyph)
             cell.iconSymbol.contentDescription = localizedName
             cell.iconSymbol.setTextColor(iconColor)
         } else {

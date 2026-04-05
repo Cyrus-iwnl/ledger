@@ -6,6 +6,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import com.example.account.data.TransactionType
 import com.example.account.databinding.ActivityMainBinding
+import com.example.account.ui.edit.CategoryAddFragment
+import com.example.account.ui.edit.CategoryManageFragment
 import com.example.account.ui.edit.EditTransactionFragment
 import com.example.account.ui.home.HomeFragment
 import com.example.account.ui.insights.InsightsFragment
@@ -21,6 +23,8 @@ class MainActivity : AppCompatActivity() {
     private val editorTag = EditTransactionFragment::class.java.name
     private val insightsTag = InsightsFragment::class.java.name
     private val settingsTag = SettingsFragment::class.java.name
+    private val categoryManageTag = CategoryManageFragment::class.java.name
+    private val categoryAddTag = CategoryAddFragment::class.java.name
 
     override fun onCreate(savedInstanceState: Bundle?) {
         PerfTrace.measure("MainActivity.onCreate") {
@@ -164,6 +168,42 @@ class MainActivity : AppCompatActivity() {
                 settingsTag
             )
             .addToBackStack(settingsTag)
+            .commit()
+        updateChrome()
+    }
+
+    fun openCategoryManage(defaultType: TransactionType = TransactionType.EXPENSE) {
+        supportFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                R.anim.fragment_forward_enter,
+                R.anim.fragment_forward_exit,
+                R.anim.fragment_pop_enter,
+                R.anim.fragment_pop_exit
+            )
+            .replace(
+                R.id.fragment_container,
+                CategoryManageFragment.newInstance(defaultType),
+                categoryManageTag
+            )
+            .addToBackStack(categoryManageTag)
+            .commit()
+        updateChrome()
+    }
+
+    fun openCategoryAdd(type: TransactionType) {
+        supportFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                R.anim.fragment_forward_enter,
+                R.anim.fragment_forward_exit,
+                R.anim.fragment_pop_enter,
+                R.anim.fragment_pop_exit
+            )
+            .replace(
+                R.id.fragment_container,
+                CategoryAddFragment.newInstance(type),
+                categoryAddTag
+            )
+            .addToBackStack(categoryAddTag)
             .commit()
         updateChrome()
     }

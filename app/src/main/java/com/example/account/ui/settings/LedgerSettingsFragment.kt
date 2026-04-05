@@ -177,6 +177,7 @@ class LedgerSettingsFragment : Fragment() {
 
         titleText.text = title
         subtitleText.text = subtitle
+        subtitleText.visibility = View.VISIBLE
         descriptionText.text = description
         deleteButton.text = confirmText
 
