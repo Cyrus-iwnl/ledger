@@ -150,7 +150,7 @@ class EditTransactionFragment : Fragment() {
             saveTransaction(closeAfterSave = true)
         }
 
-        binding.deleteButton.visibility = if (transactionId == null) View.GONE else View.VISIBLE
+        updateHeaderActionButtons()
     }
 
     private fun applyDraft(draft: TransactionDraft) {
@@ -168,6 +168,13 @@ class EditTransactionFragment : Fragment() {
         updatePrimaryActionUi()
         loadCategories(selectedCategoryId = draft.categoryId)
         binding.typeToggle.post { syncTypeToggleThumb(animated = false) }
+        updateHeaderActionButtons()
+    }
+
+    private fun updateHeaderActionButtons() {
+        val isEditingTransaction = transactionId != null
+        binding.deleteButton.visibility = if (isEditingTransaction) View.VISIBLE else View.GONE
+        binding.editCategoryButton.visibility = if (isEditingTransaction) View.GONE else View.VISIBLE
     }
 
     private fun loadCategories(selectedCategoryId: String? = null) {
@@ -1028,7 +1035,7 @@ class EditTransactionFragment : Fragment() {
         updateAmountPreview()
         updatePrimaryActionUi()
         loadCategories(selectedCategoryId = savedCategoryId)
-        binding.deleteButton.visibility = View.GONE
+        updateHeaderActionButtons()
         Toast.makeText(
             requireContext(),
             R.string.transaction_saved_ready_next,

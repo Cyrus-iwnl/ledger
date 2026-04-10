@@ -41,6 +41,8 @@ class CategoryAddFragment : Fragment() {
     private var selectedType: TransactionType = TransactionType.EXPENSE
     private var selectedIconGlyph: String = "category"
     private var selectedColor: Int = Color.parseColor("#FF9F89")
+    private var editingCategoryId: String? = null
+    private var isEditMode: Boolean = false
     private var symbolTypeface: Typeface? = null
     private var iconAdapter: IconAdapter? = null
 
@@ -63,6 +65,19 @@ class CategoryAddFragment : Fragment() {
         selectedType = TransactionType.valueOf(
             arguments?.getString(ARG_TYPE) ?: TransactionType.EXPENSE.name
         )
+        editingCategoryId = arguments?.getString(ARG_CATEGORY_ID)?.takeIf { it.isNotBlank() }
+        val editingCategory = editingCategoryId?.let { viewModel.findCategory(it) }
+        if (editingCategory != null) {
+            isEditMode = true
+            selectedType = editingCategory.type
+            selectedIconGlyph = CategoryLocalizer.normalizeIconGlyph(
+                editingCategory.iconGlyph.ifBlank { "category" }
+            )
+            selectedColor = editingCategory.accentColor
+        } else {
+            isEditMode = false
+            editingCategoryId = null
+        }
 
         symbolTypeface = try {
             ResourcesCompat.getFont(requireContext(), R.font.material_symbols_outlined_static)
@@ -79,6 +94,9 @@ class CategoryAddFragment : Fragment() {
         view.findViewById<View>(R.id.back_button).setOnClickListener {
             activity?.onBackPressedDispatcher?.onBackPressed()
         }
+        view.findViewById<TextView>(R.id.page_title).setText(
+            if (isEditMode) R.string.edit_category else R.string.add_category
+        )
 
         setupColorPicker(view)
         setupIconPicker(view)
@@ -98,6 +116,19 @@ class CategoryAddFragment : Fragment() {
             }
             if (weight > 30.0) "" else null
         })
+        if (editingCategory != null) {
+            if (isOtherCategory(editingCategory.id)) {
+                nameInput.setText(CategoryLocalizer.displayName(requireContext(), editingCategory))
+                nameInput.isEnabled = false
+                nameInput.isFocusable = false
+                nameInput.isFocusableInTouchMode = false
+                nameInput.isClickable = false
+                nameInput.alpha = 0.6f
+            } else {
+                nameInput.setText(editingCategory.name)
+                nameInput.setSelection(nameInput.text?.length ?: 0)
+            }
+        }
 
         view.findViewById<View>(R.id.save_button).setOnClickListener {
             saveCategory(view)
@@ -281,9 +312,31 @@ class CategoryAddFragment : Fragment() {
     private fun saveCategory(view: View) {
         val nameInput = view.findViewById<EditText>(R.id.name_input)
         val name = nameInput.text?.toString()?.trim().orEmpty()
+        val editId = editingCategoryId
 
-        if (name.isBlank()) {
+        if (editId == null && name.isBlank()) {
             Toast.makeText(requireContext(), R.string.category_name_empty, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (isEditMode && editId != null) {
+            val current = viewModel.findCategory(editId)
+            val effectiveName = if (isOtherCategory(editId)) {
+                current?.name.orEmpty()
+            } else {
+                name
+            }
+            if (effectiveName.isBlank()) {
+                Toast.makeText(requireContext(), R.string.category_name_empty, Toast.LENGTH_SHORT).show()
+                return
+            }
+            val updated = viewModel.updateCategory(editId, effectiveName, selectedIconGlyph, selectedColor)
+            if (updated) {
+                Toast.makeText(requireContext(), R.string.category_updated, Toast.LENGTH_SHORT).show()
+                activity?.onBackPressedDispatcher?.onBackPressed()
+            } else {
+                Toast.makeText(requireContext(), R.string.category_update_failed, Toast.LENGTH_SHORT).show()
+            }
             return
         }
 
@@ -296,6 +349,10 @@ class CategoryAddFragment : Fragment() {
         viewModel.addCustomCategory(name, selectedIconGlyph, selectedColor, selectedType)
         Toast.makeText(requireContext(), R.string.category_added, Toast.LENGTH_SHORT).show()
         activity?.onBackPressedDispatcher?.onBackPressed()
+    }
+
+    private fun isOtherCategory(categoryId: String?): Boolean {
+        return categoryId == "expense_other" || categoryId == "income_other"
     }
 
     @Suppress("DEPRECATION")
@@ -424,11 +481,15 @@ class CategoryAddFragment : Fragment() {
 
     companion object {
         private const val ARG_TYPE = "category_type"
+        private const val ARG_CATEGORY_ID = "category_id"
 
-        fun newInstance(type: TransactionType): CategoryAddFragment {
+        fun newInstance(type: TransactionType, categoryId: String? = null): CategoryAddFragment {
             return CategoryAddFragment().apply {
                 arguments = Bundle().apply {
                     putString(ARG_TYPE, type.name)
+                    if (!categoryId.isNullOrBlank()) {
+                        putString(ARG_CATEGORY_ID, categoryId)
+                    }
                 }
             }
         }

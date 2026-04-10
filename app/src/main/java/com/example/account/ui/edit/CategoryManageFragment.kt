@@ -164,6 +164,9 @@ class CategoryManageFragment : Fragment() {
         recyclerView = view.findViewById(R.id.category_list)
         adapter = CategoryManageAdapter(
             onDeleteClick = { category -> showDeleteConfirmation(category) },
+            onEditClick = { category ->
+                (activity as? MainActivity)?.openCategoryAdd(category.type, category.id)
+            },
             onStartDrag = { viewHolder -> itemTouchHelper.startDrag(viewHolder) }
         )
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -228,6 +231,7 @@ class CategoryManageFragment : Fragment() {
 
     inner class CategoryManageAdapter(
         private val onDeleteClick: (LedgerCategory) -> Unit,
+        private val onEditClick: (LedgerCategory) -> Unit,
         private val onStartDrag: (RecyclerView.ViewHolder) -> Unit
     ) : RecyclerView.Adapter<CategoryManageAdapter.ViewHolder>() {
 
@@ -263,6 +267,7 @@ class CategoryManageFragment : Fragment() {
             private val iconImage = itemView.findViewById<ImageView>(R.id.category_icon_image)
             private val iconSymbol = itemView.findViewById<TextView>(R.id.category_icon_symbol)
             private val nameText = itemView.findViewById<TextView>(R.id.category_name)
+            private val editBtn = itemView.findViewById<View>(R.id.edit_button)
             private val deleteBtn = itemView.findViewById<View>(R.id.delete_button)
             private val dragHandle = itemView.findViewById<View>(R.id.drag_handle)
 
@@ -298,6 +303,7 @@ class CategoryManageFragment : Fragment() {
                 deleteBtn.setOnClickListener {
                     if (!isOther) onDeleteClick(category)
                 }
+                editBtn.setOnClickListener { onEditClick(category) }
 
                 // Drag handle
                 dragHandle.setOnTouchListener { _, event ->

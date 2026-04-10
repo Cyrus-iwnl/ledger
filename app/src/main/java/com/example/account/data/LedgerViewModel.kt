@@ -116,6 +116,8 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun getAllCategories(): List<LedgerCategory> = repository.getAllCategories()
 
+    fun findCategory(categoryId: String): LedgerCategory? = repository.findCategory(categoryId)
+
     fun getAllTransactions(): List<LedgerTransaction> = repository.getAllTransactions()
 
     fun addCustomCategory(name: String, iconGlyph: String, accentColor: Int, type: TransactionType): LedgerCategory {
@@ -128,6 +130,20 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
         repository.deleteCategory(categoryId)
         _categoriesChanged.value = System.currentTimeMillis()
         refresh()
+    }
+
+    fun updateCategory(
+        categoryId: String,
+        name: String,
+        iconGlyph: String,
+        accentColor: Int
+    ): Boolean {
+        val updated = repository.updateCategory(categoryId, name, iconGlyph, accentColor)
+        if (updated) {
+            _categoriesChanged.value = System.currentTimeMillis()
+            refresh()
+        }
+        return updated
     }
 
     fun reorderCategories(type: TransactionType, orderedIds: List<String>) {
@@ -210,6 +226,14 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun setExchangeRateToCny(currency: CurrencyCode, rate: Double) {
         repository.setExchangeRateToCny(currency, rate)
+    }
+
+    fun markExchangeRateRefreshedToday() {
+        repository.markExchangeRateRefreshed()
+    }
+
+    fun getExchangeRateLastRefreshAtMillis(): Long? {
+        return repository.getExchangeRateLastRefreshAtMillis()
     }
 
     fun getLastUsedCurrency(): CurrencyCode {

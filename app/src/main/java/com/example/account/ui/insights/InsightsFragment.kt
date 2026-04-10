@@ -1,5 +1,6 @@
 package com.example.account.ui.insights
 
+import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
@@ -72,6 +73,7 @@ class InsightsFragment : Fragment() {
     private var numberLocale: Locale = Locale.US
     private var text: InsightsText = insightsText("en")
     private var uiState = UiState(year = LocalDate.now().year, monthIndex = LocalDate.now().monthValue - 1)
+    private var activeLedgerId: String? = null
     private val contentEnterInterpolator = FastOutSlowInInterpolator()
 
     override fun onCreateView(
@@ -97,21 +99,20 @@ class InsightsFragment : Fragment() {
         val now = LocalDate.now()
         val resolvedYear = arguments?.getInt(ARG_DEFAULT_YEAR, now.year) ?: now.year
         val resolvedMonthIndex = arguments?.getInt(ARG_DEFAULT_MONTH_INDEX, now.monthValue - 1) ?: (now.monthValue - 1)
-        uiState = UiState(
+        activeLedgerId = viewModel.currentLedger.value?.id
+        val defaultUiState = UiState(
             year = resolvedYear,
             monthIndex = resolvedMonthIndex.coerceIn(0, 11),
-            granularity = when (defaultGranularity.uppercase(Locale.ROOT)) {
-                "ALL" -> InsightsGranularity.ALL
-                "YEAR" -> InsightsGranularity.YEAR
-                else -> InsightsGranularity.MONTH
-            }
+            granularity = resolveGranularity(defaultGranularity)
         )
+        uiState = restoreInsightsScopePreference(defaultUiState, activeLedgerId)
 
         applyStaticText()
         applyStaticStyles()
         applyLedgerModeUi()
         bindListeners()
         bindPeriodPickerResult()
+        bindLedgerObserver()
         stabilizeInitialToggleStyles()
         loadData()
     }
@@ -341,6 +342,21 @@ class InsightsFragment : Fragment() {
         return rawX in left..right && rawY in top..bottom
     }
 
+    private fun bindLedgerObserver() {
+        viewModel.currentLedger.observe(viewLifecycleOwner) { ledger ->
+            if (activeLedgerId == ledger.id) {
+                return@observe
+            }
+            activeLedgerId = ledger.id
+            uiState = restoreInsightsScopePreference(
+                baseState = uiState.copy(selectedBarIndex = null, selectedCategoryId = null, categoryExpanded = false),
+                ledgerId = ledger.id
+            )
+            applyLedgerModeUi()
+            loadData()
+        }
+    }
+
     private fun bindPeriodPickerResult() {
         parentFragmentManager.setFragmentResultListener(
             INSIGHTS_PERIOD_PICKER_REQUEST_KEY,
@@ -350,6 +366,7 @@ class InsightsFragment : Fragment() {
             if (isAll) {
                 if (uiState.granularity == InsightsGranularity.ALL) return@setFragmentResultListener
                 uiState = uiState.copy(granularity = InsightsGranularity.ALL)
+                persistInsightsScopePreference()
                 applyLedgerModeUi()
                 render()
                 return@setFragmentResultListener
@@ -362,6 +379,7 @@ class InsightsFragment : Fragment() {
                     return@setFragmentResultListener
                 }
                 uiState = uiState.copy(granularity = InsightsGranularity.YEAR, year = year)
+                persistInsightsScopePreference()
                 applyLedgerModeUi()
                 render()
                 return@setFragmentResultListener
@@ -373,9 +391,57 @@ class InsightsFragment : Fragment() {
                 return@setFragmentResultListener
             }
             uiState = uiState.copy(granularity = InsightsGranularity.MONTH, year = year, monthIndex = monthIndex)
+            persistInsightsScopePreference()
             applyLedgerModeUi()
             render()
         }
+    }
+
+    private fun resolveGranularity(raw: String?): InsightsGranularity {
+        return when (raw?.uppercase(Locale.ROOT)) {
+            "ALL" -> InsightsGranularity.ALL
+            "YEAR" -> InsightsGranularity.YEAR
+            else -> InsightsGranularity.MONTH
+        }
+    }
+
+    private fun restoreInsightsScopePreference(baseState: UiState, ledgerId: String? = activeLedgerId): UiState {
+        val prefs = insightsPrefs()
+        val modeKey = ledgerScopedInsightsKey(KEY_INSIGHTS_SCOPE_MODE, ledgerId)
+        if (!prefs.contains(modeKey)) {
+            return baseState
+        }
+        val granularity = resolveGranularity(prefs.getString(modeKey, baseState.granularity.name))
+        val year = prefs.getInt(ledgerScopedInsightsKey(KEY_INSIGHTS_SCOPE_YEAR, ledgerId), baseState.year).coerceAtLeast(1)
+        val monthIndex = prefs.getInt(
+            ledgerScopedInsightsKey(KEY_INSIGHTS_SCOPE_MONTH_INDEX, ledgerId),
+            baseState.monthIndex
+        ).coerceIn(0, 11)
+        return baseState.copy(
+            granularity = granularity,
+            year = year,
+            monthIndex = monthIndex,
+            selectedBarIndex = null,
+            selectedCategoryId = null,
+            categoryExpanded = false
+        )
+    }
+
+    private fun persistInsightsScopePreference() {
+        val ledgerId = activeLedgerId ?: viewModel.currentLedger.value?.id
+        insightsPrefs().edit()
+            .putString(ledgerScopedInsightsKey(KEY_INSIGHTS_SCOPE_MODE, ledgerId), uiState.granularity.name)
+            .putInt(ledgerScopedInsightsKey(KEY_INSIGHTS_SCOPE_YEAR, ledgerId), uiState.year)
+            .putInt(ledgerScopedInsightsKey(KEY_INSIGHTS_SCOPE_MONTH_INDEX, ledgerId), uiState.monthIndex)
+            .apply()
+    }
+
+    private fun insightsPrefs() =
+        requireContext().applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+    private fun ledgerScopedInsightsKey(baseKey: String, ledgerId: String?): String {
+        val resolvedLedgerId = ledgerId?.takeIf { it.isNotBlank() } ?: DEFAULT_LEDGER_SCOPE_SUFFIX
+        return "${baseKey}_$resolvedLedgerId"
     }
 
     private fun openPeriodPicker() {
@@ -1182,12 +1248,7 @@ class InsightsFragment : Fragment() {
             )
         }
 
-        val endDate = if (java.time.temporal.ChronoUnit.DAYS.between(firstDate, lastRecordedDate).toInt() + 1 < 30) {
-            firstDate.plusDays(30)
-        } else {
-            lastRecordedDate
-        }
-        renderProjectDailyCalendar(currentTransactions, firstDate, endDate)
+        renderProjectDailyCalendar(currentTransactions, firstDate, lastRecordedDate)
     }
 
     private fun renderProjectDailyCalendar(
@@ -1198,9 +1259,13 @@ class InsightsFragment : Fragment() {
         val grouped = currentTransactions.groupBy {
             Instant.ofEpochMilli(it.source.timestampMillis).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
         }
-        val dayCount = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate).toInt() + 1
+        val startMonth = YearMonth.from(startDate)
+        val endMonth = YearMonth.from(endDate)
+        val displayStartDate = startMonth.atDay(1)
+        val displayEndDate = endMonth.atEndOfMonth()
+        val dayCount = java.time.temporal.ChronoUnit.DAYS.between(displayStartDate, displayEndDate).toInt() + 1
         val statsByDate = (0 until dayCount).associate { offset ->
-            val date = startDate.plusDays(offset.toLong())
+            val date = displayStartDate.plusDays(offset.toLong())
             val bucket = grouped[date].orEmpty()
             date to ProjectCalendarStat(
                 date = date,
@@ -1215,13 +1280,12 @@ class InsightsFragment : Fragment() {
             positiveMax = values.filter { it > 0 }.maxOrNull() ?: 0.0,
             negativeMax = values.filter { it < 0 }.maxOfOrNull { abs(it) } ?: 0.0
         )
-        var cursorMonth = YearMonth.from(startDate)
-        val endMonth = YearMonth.from(endDate)
+        var cursorMonth = startMonth
         while (!cursorMonth.isAfter(endMonth)) {
             binding.insightsCalendarGrid.addView(calendarMonthDivider(cursorMonth))
 
-            val monthStart = maxOf(startDate, cursorMonth.atDay(1))
-            val monthEnd = minOf(endDate, cursorMonth.atEndOfMonth())
+            val monthStart = cursorMonth.atDay(1)
+            val monthEnd = cursorMonth.atEndOfMonth()
             val monthDays = java.time.temporal.ChronoUnit.DAYS.between(monthStart, monthEnd).toInt() + 1
             val firstWeekday = (monthStart.dayOfWeek.value - 1).coerceAtLeast(0)
 
@@ -2039,6 +2103,11 @@ class InsightsFragment : Fragment() {
         private const val ARG_DEFAULT_GRANULARITY = "arg_default_granularity"
         private const val ARG_DEFAULT_YEAR = "arg_default_year"
         private const val ARG_DEFAULT_MONTH_INDEX = "arg_default_month_index"
+        private const val PREFS_NAME = "app_settings"
+        private const val KEY_INSIGHTS_SCOPE_MODE = "insights_scope_mode"
+        private const val KEY_INSIGHTS_SCOPE_YEAR = "insights_scope_year"
+        private const val KEY_INSIGHTS_SCOPE_MONTH_INDEX = "insights_scope_month_index"
+        private const val DEFAULT_LEDGER_SCOPE_SUFFIX = "default"
 
         fun newInstance(
             defaultGranularity: String = "MONTH",

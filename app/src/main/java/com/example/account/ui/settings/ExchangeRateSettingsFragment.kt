@@ -1,6 +1,7 @@
 package com.example.account.ui.settings
 
 import android.os.Bundle
+import android.text.format.DateFormat
 import android.graphics.drawable.PictureDrawable
 import android.view.LayoutInflater
 import android.view.View
@@ -15,6 +16,7 @@ import androidx.lifecycle.lifecycleScope
 import com.caverock.androidsvg.SVG
 import com.example.account.R
 import com.example.account.data.CurrencyCode
+import com.example.account.data.ExchangeRateApiClient
 import com.example.account.data.LedgerViewModel
 import com.example.account.databinding.FragmentExchangeRateSettingsBinding
 import com.example.account.ui.DialogFactory
@@ -24,12 +26,7 @@ import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
-import org.json.JSONObject
-import java.math.BigDecimal
-import java.math.RoundingMode
-import java.net.HttpURLConnection
-import java.net.URL
+import java.util.Date
 
 class ExchangeRateSettingsFragment : Fragment() {
 
@@ -62,6 +59,16 @@ class ExchangeRateSettingsFragment : Fragment() {
             fetchLatestRatesFromApi()
         }
         renderRateList()
+        renderLastUpdatedTime()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (_binding == null) {
+            return
+        }
+        renderRateList()
+        renderLastUpdatedTime()
     }
 
     private fun renderRateList() {
@@ -141,7 +148,7 @@ class ExchangeRateSettingsFragment : Fragment() {
         updateAutoFetchState(fetching = true)
         viewLifecycleOwner.lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) {
-                runCatching { requestLatestRatesToCny() }
+                runCatching { ExchangeRateApiClient.requestLatestRatesToCny() }
             }
             if (_binding == null || !isAdded) {
                 return@launch
@@ -151,7 +158,9 @@ class ExchangeRateSettingsFragment : Fragment() {
                     fetchedRates.forEach { (currency, rate) ->
                         viewModel.setExchangeRateToCny(currency, rate)
                     }
+                    viewModel.markExchangeRateRefreshedToday()
                     renderRateList()
+                    renderLastUpdatedTime()
                     Toast.makeText(
                         requireContext(),
                         getString(R.string.settings_exchange_rate_auto_fetch_success, fetchedRates.size),
@@ -182,60 +191,15 @@ class ExchangeRateSettingsFragment : Fragment() {
         )
     }
 
-    private fun requestLatestRatesToCny(): Map<CurrencyCode, Double> {
-        val quotes = AUTO_FETCH_CURRENCIES.joinToString(",") { it.code }
-        val connection = (URL("$FRANKFURTER_API/v2/rates?base=CNY&quotes=$quotes").openConnection() as HttpURLConnection).apply {
-            requestMethod = "GET"
-            connectTimeout = 10_000
-            readTimeout = 10_000
-            setRequestProperty("Accept", "application/json")
+    private fun renderLastUpdatedTime() {
+        val lastRefreshAt = viewModel.getExchangeRateLastRefreshAtMillis()
+        binding.lastRefreshText.text = if (lastRefreshAt != null) {
+            val dateText = DateFormat.getDateFormat(requireContext()).format(Date(lastRefreshAt))
+            val timeText = DateFormat.getTimeFormat(requireContext()).format(Date(lastRefreshAt))
+            getString(R.string.settings_exchange_rate_last_refresh_at_format, "$dateText $timeText")
+        } else {
+            getString(R.string.settings_exchange_rate_last_refresh_at_empty)
         }
-
-        try {
-            val statusCode = connection.responseCode
-            val body = (if (statusCode in 200..299) {
-                connection.inputStream
-            } else {
-                connection.errorStream
-            })?.bufferedReader()?.use { it.readText() }.orEmpty()
-
-            if (statusCode !in 200..299) {
-                val message = parseApiErrorMessage(body) ?: "HTTP $statusCode"
-                throw IllegalStateException(message)
-            }
-
-            val response = JSONArray(body)
-            val rates = mutableMapOf<CurrencyCode, Double>()
-            for (index in 0 until response.length()) {
-                val item = response.getJSONObject(index)
-                val quoteCode = item.optString("quote")
-                val quoteCurrency = AUTO_FETCH_CURRENCIES.firstOrNull { it.code == quoteCode } ?: continue
-                val ratePerCny = item.optString("rate").toBigDecimalOrNull()
-                if (ratePerCny == null || ratePerCny <= BigDecimal.ZERO) {
-                    continue
-                }
-                val cnyPerUnit = BigDecimal.ONE
-                    .divide(ratePerCny, 6, RoundingMode.HALF_UP)
-                    .toDouble()
-                rates[quoteCurrency] = cnyPerUnit
-            }
-
-            if (rates.isEmpty()) {
-                throw IllegalStateException("No valid rates returned")
-            }
-            return rates
-        } finally {
-            connection.disconnect()
-        }
-    }
-
-    private fun parseApiErrorMessage(body: String): String? {
-        if (body.isBlank()) {
-            return null
-        }
-        return runCatching {
-            JSONObject(body).optString("message")
-        }.getOrNull()?.takeIf { it.isNotBlank() }
     }
 
     @RawRes
@@ -326,8 +290,6 @@ class ExchangeRateSettingsFragment : Fragment() {
     }
 
     companion object {
-        private const val FRANKFURTER_API = "https://api.frankfurter.dev"
-        private val AUTO_FETCH_CURRENCIES = CurrencyCode.values().filter { it != CurrencyCode.CNY }
         fun newInstance(): ExchangeRateSettingsFragment = ExchangeRateSettingsFragment()
     }
 }

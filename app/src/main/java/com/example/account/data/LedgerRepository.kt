@@ -650,6 +650,10 @@ class LedgerRepository(context: Context) {
         return _categories.filter { it.type == type }
     }
 
+    fun findCategory(categoryId: String): LedgerCategory? = synchronized(lock) {
+        _categories.firstOrNull { it.id == categoryId }
+    }
+
     fun addCustomCategory(name: String, iconGlyph: String, accentColor: Int, type: TransactionType): LedgerCategory = synchronized(lock) {
         val id = "custom_${type.name.lowercase()}_${UUID.randomUUID().toString().replace("-", "").take(8)}"
         val category = LedgerCategory(
@@ -671,6 +675,35 @@ class LedgerRepository(context: Context) {
         _categories = currentList
         persistCustomCategories()
         category
+    }
+
+    fun updateCategory(
+        categoryId: String,
+        name: String,
+        iconGlyph: String,
+        accentColor: Int
+    ): Boolean = synchronized(lock) {
+        val index = _categories.indexOfFirst { it.id == categoryId }
+        if (index < 0) return@synchronized false
+
+        val current = _categories[index]
+        val normalizedName = name.trim()
+        val isOther = categoryId == "expense_other" || categoryId == "income_other"
+        if (!isOther && normalizedName.isBlank()) return@synchronized false
+        val updated = current.copy(
+            name = if (isOther) current.name else normalizedName,
+            iconGlyph = iconGlyph,
+            accentColor = accentColor
+        )
+        if (current == updated) {
+            return@synchronized true
+        }
+
+        val list = _categories.toMutableList()
+        list[index] = updated
+        _categories = list
+        persistCustomCategories()
+        true
     }
 
     fun deleteCategory(categoryId: String) = synchronized(lock) {
@@ -782,6 +815,26 @@ class LedgerRepository(context: Context) {
         prefs.edit()
             .putString(exchangeRateKey(currency), rate.toString())
             .apply()
+    }
+
+    fun needsExchangeRateDailyRefresh(nowMillis: Long = System.currentTimeMillis()): Boolean = synchronized(lock) {
+        val zoneId = ZoneId.systemDefault()
+        val today = java.time.Instant.ofEpochMilli(nowMillis).atZone(zoneId).toLocalDate()
+        val lastRefreshDate = prefs.getLong(KEY_EXCHANGE_RATE_LAST_REFRESH_AT_MILLIS, 0L)
+            .takeIf { it > 0L }
+            ?.let { java.time.Instant.ofEpochMilli(it).atZone(zoneId).toLocalDate() }
+        lastRefreshDate == null || lastRefreshDate.isBefore(today)
+    }
+
+    fun markExchangeRateRefreshed(nowMillis: Long = System.currentTimeMillis()) = synchronized(lock) {
+        prefs.edit()
+            .putLong(KEY_EXCHANGE_RATE_LAST_REFRESH_AT_MILLIS, nowMillis)
+            .apply()
+    }
+
+    fun getExchangeRateLastRefreshAtMillis(): Long? = synchronized(lock) {
+        prefs.getLong(KEY_EXCHANGE_RATE_LAST_REFRESH_AT_MILLIS, 0L)
+            .takeIf { it > 0L }
     }
 
     fun getLastUsedCurrency(): CurrencyCode = synchronized(lock) {
@@ -1706,6 +1759,7 @@ class LedgerRepository(context: Context) {
         private const val KEY_YEARLY_BUDGET_PREFIX = "yearly_budget_"
         private const val KEY_PROJECT_BUDGET_PREFIX = "project_budget_"
         private const val KEY_EXCHANGE_RATE_PREFIX = "exchange_rate_"
+        private const val KEY_EXCHANGE_RATE_LAST_REFRESH_AT_MILLIS = "exchange_rate_last_refresh_at_millis"
         private const val KEY_LAST_USED_CURRENCY = "last_used_currency"
         private const val KEY_CUSTOM_CATEGORIES = "custom_categories_v1"
         private const val MONTHLY_BUDGET_CLEARED_MARKER = "__cleared__"

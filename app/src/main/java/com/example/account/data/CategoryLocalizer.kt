@@ -20,6 +20,35 @@ object CategoryLocalizer {
         "conveyor_belt" to "local_shipping"
     )
 
+    private val builtInDefaultNames = mapOf(
+        "expense_meals" to "Meals",
+        "expense_snacks" to "Snacks",
+        "expense_drinks" to "Drinks",
+        "expense_clothing" to "Clothing",
+        "expense_transport" to "Transport",
+        "expense_travel" to "Travel",
+        "expense_fun" to "Fun",
+        "expense_utility" to "Utility",
+        "expense_learn" to "Learn",
+        "expense_daily" to "Daily",
+        "expense_beauty" to "Beauty",
+        "expense_medical" to "Medical",
+        "expense_sports" to "Sports",
+        "expense_gifts" to "Gifts",
+        "expense_digital" to "Digital",
+        "expense_pets" to "Pets",
+        "expense_home" to "Home",
+        "expense_comm" to "Comm",
+        "expense_social" to "Social",
+        "expense_kids" to "Kids",
+        "expense_other" to "Other",
+        "income_salary" to "Salary",
+        "income_bonus" to "Bonus",
+        "income_investment" to "Investment",
+        "income_refund" to "Refund",
+        "income_other" to "Other"
+    )
+
     fun displayName(context: Context, category: LedgerCategory?): String {
         val fallback = category?.name ?: context.getString(R.string.category_uncategorized)
         return nameForId(context, category?.id, fallback)
@@ -56,7 +85,15 @@ object CategoryLocalizer {
             "income_other" -> R.string.category_other
             else -> null
         }
-        return if (resId == null) fallback else context.getString(resId)
+        if (resId == null) {
+            return fallback
+        }
+        val defaultName = builtInDefaultNames[key]
+        return if (!defaultName.isNullOrEmpty() && fallback != defaultName) {
+            fallback
+        } else {
+            context.getString(resId)
+        }
     }
 
     fun normalizeIconGlyph(glyph: String): String {
@@ -65,4 +102,3 @@ object CategoryLocalizer {
         return iconGlyphAliases[trimmed] ?: trimmed
     }
 }
-

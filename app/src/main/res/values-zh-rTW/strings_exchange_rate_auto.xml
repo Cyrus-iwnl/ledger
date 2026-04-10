@@ -4,4 +4,6 @@
     <string name="settings_exchange_rate_auto_fetch_loading">載入中</string>
     <string name="settings_exchange_rate_auto_fetch_success">已更新 %1$d 項匯率</string>
     <string name="settings_exchange_rate_auto_fetch_failed">取得最新匯率失敗</string>
+    <string name="settings_exchange_rate_last_refresh_at_format">上次更新：%1$s</string>
+    <string name="settings_exchange_rate_last_refresh_at_empty">上次更新：--</string>
 </resources>

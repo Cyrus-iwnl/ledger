@@ -49,6 +49,8 @@
     <string name="settings_exchange_rate_auto_fetch_loading">...</string>
     <string name="settings_exchange_rate_auto_fetch_success">Updated %1$d rates</string>
     <string name="settings_exchange_rate_auto_fetch_failed">Failed to fetch latest rates</string>
+    <string name="settings_exchange_rate_last_refresh_at_format">Last updated: %1$s</string>
+    <string name="settings_exchange_rate_last_refresh_at_empty">Last updated: --</string>
     <string name="settings_currency_name_cny">Chinese Yuan (%1$s)</string>
     <string name="settings_currency_name_hkd">Hong Kong Dollar (%1$s)</string>
     <string name="settings_currency_name_twd">New Taiwan Dollar (%1$s)</string>

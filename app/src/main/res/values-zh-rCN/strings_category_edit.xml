@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="edit_category">\u7f16\u8f91\u5206\u7c7b</string>
+    <string name="category_updated">\u5206\u7c7b\u5df2\u66f4\u65b0</string>
+    <string name="category_update_failed">\u66f4\u65b0\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5</string>
+</resources>

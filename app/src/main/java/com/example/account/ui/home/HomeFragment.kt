@@ -70,6 +70,7 @@ class HomeFragment : Fragment() {
     private var numberLocale: Locale = Locale.US
     private var monthWord: String = "Month"
     private var needsLocaleDrivenDashboardRefresh: Boolean = true
+    private var activeLedgerId: String? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -91,7 +92,8 @@ class HomeFragment : Fragment() {
 
             syncLocaleStateFromResources(force = true)
 
-            restoreHomeScopePreference()
+            activeLedgerId = viewModel.currentLedger.value?.id
+            restoreHomeScopePreference(activeLedgerId)
             restoreTrendFilterPreference()
             applyLedgerModeUi()
             refreshBudgetForSelection()
@@ -157,6 +159,11 @@ class HomeFragment : Fragment() {
             }
 
             viewModel.currentLedger.observe(viewLifecycleOwner) { ledger ->
+                if (activeLedgerId != ledger.id) {
+                    activeLedgerId = ledger.id
+                    restoreHomeScopePreference(ledger.id)
+                    applyDashboardScope()
+                }
                 applyLedgerModeUi()
                 refreshBudgetForSelection()
                 latestDashboard?.let { renderDashboard(it) }
@@ -658,17 +665,39 @@ class HomeFragment : Fragment() {
         applyDashboardScope()
     }
 
-    private fun restoreHomeScopePreference() {
+    private fun restoreHomeScopePreference(ledgerId: String? = activeLedgerId) {
         val now = YearMonth.now()
         val prefs = homePrefs()
+        val modeKey = ledgerScopedHomeKey(KEY_HOME_SCOPE_MODE, ledgerId)
+        val scopeYearKey = ledgerScopedHomeKey(KEY_HOME_SCOPE_YEAR, ledgerId)
+        val monthYearKey = ledgerScopedHomeKey(KEY_HOME_SCOPE_MONTH_YEAR, ledgerId)
+        val monthValueKey = ledgerScopedHomeKey(KEY_HOME_SCOPE_MONTH_VALUE, ledgerId)
         val restoredMonth = runCatching {
-            val year = prefs.getInt(KEY_HOME_SCOPE_MONTH_YEAR, now.year)
-            val monthValue = prefs.getInt(KEY_HOME_SCOPE_MONTH_VALUE, now.monthValue).coerceIn(1, 12)
+            val year = if (prefs.contains(monthYearKey)) {
+                prefs.getInt(monthYearKey, now.year)
+            } else {
+                prefs.getInt(KEY_HOME_SCOPE_MONTH_YEAR, now.year)
+            }
+            val monthValue = if (prefs.contains(monthValueKey)) {
+                prefs.getInt(monthValueKey, now.monthValue)
+            } else {
+                prefs.getInt(KEY_HOME_SCOPE_MONTH_VALUE, now.monthValue)
+            }.coerceIn(1, 12)
             YearMonth.of(year, monthValue)
         }.getOrDefault(now)
         selectedMonth = restoredMonth
-        selectedYear = prefs.getInt(KEY_HOME_SCOPE_YEAR, restoredMonth.year).coerceAtLeast(1)
-        selectedScope = when (prefs.getString(KEY_HOME_SCOPE_MODE, HomeScope.MONTH.name)) {
+        selectedYear = if (prefs.contains(scopeYearKey)) {
+            prefs.getInt(scopeYearKey, restoredMonth.year)
+        } else {
+            prefs.getInt(KEY_HOME_SCOPE_YEAR, restoredMonth.year)
+        }.coerceAtLeast(1)
+        selectedScope = when (
+            if (prefs.contains(modeKey)) {
+                prefs.getString(modeKey, HomeScope.MONTH.name)
+            } else {
+                prefs.getString(KEY_HOME_SCOPE_MODE, HomeScope.MONTH.name)
+            }
+        ) {
             HomeScope.YEAR.name -> HomeScope.YEAR
             HomeScope.ALL.name -> HomeScope.ALL
             else -> HomeScope.MONTH
@@ -683,11 +712,12 @@ class HomeFragment : Fragment() {
 
     private fun persistHomeScopePreference() {
         val resolvedMonth = selectedMonth ?: monthPickerAnchorMonth
+        val ledgerId = activeLedgerId ?: viewModel.currentLedger.value?.id
         homePrefs().edit()
-            .putString(KEY_HOME_SCOPE_MODE, selectedScope.name)
-            .putInt(KEY_HOME_SCOPE_YEAR, selectedYear)
-            .putInt(KEY_HOME_SCOPE_MONTH_YEAR, resolvedMonth.year)
-            .putInt(KEY_HOME_SCOPE_MONTH_VALUE, resolvedMonth.monthValue)
+            .putString(ledgerScopedHomeKey(KEY_HOME_SCOPE_MODE, ledgerId), selectedScope.name)
+            .putInt(ledgerScopedHomeKey(KEY_HOME_SCOPE_YEAR, ledgerId), selectedYear)
+            .putInt(ledgerScopedHomeKey(KEY_HOME_SCOPE_MONTH_YEAR, ledgerId), resolvedMonth.year)
+            .putInt(ledgerScopedHomeKey(KEY_HOME_SCOPE_MONTH_VALUE, ledgerId), resolvedMonth.monthValue)
             .apply()
     }
 
@@ -713,6 +743,11 @@ class HomeFragment : Fragment() {
 
     private fun homePrefs() =
         requireContext().applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+    private fun ledgerScopedHomeKey(baseKey: String, ledgerId: String?): String {
+        val resolvedLedgerId = ledgerId?.takeIf { it.isNotBlank() } ?: DEFAULT_LEDGER_SCOPE_SUFFIX
+        return "${baseKey}_$resolvedLedgerId"
+    }
 
     private fun openMonthPicker() {
         val pickerText = insightsText(localeTag)
@@ -984,6 +1019,7 @@ class HomeFragment : Fragment() {
         private const val KEY_HOME_SCOPE_MONTH_VALUE = "home_scope_month_value"
         private const val KEY_HOME_TREND_WINDOW_DAYS = "home_trend_window_days"
         private const val KEY_HOME_TREND_DISPLAY_MODE = "home_trend_display_mode"
+        private const val DEFAULT_LEDGER_SCOPE_SUFFIX = "default"
         private const val HOME_PERIOD_PICKER_REQUEST_KEY = "home_period_picker_result"
 
         fun newInstance(): HomeFragment = HomeFragment()

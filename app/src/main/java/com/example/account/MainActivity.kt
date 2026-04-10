@@ -190,7 +190,7 @@ class MainActivity : AppCompatActivity() {
         updateChrome()
     }
 
-    fun openCategoryAdd(type: TransactionType) {
+    fun openCategoryAdd(type: TransactionType, categoryId: String? = null) {
         supportFragmentManager.beginTransaction()
             .setCustomAnimations(
                 R.anim.fragment_forward_enter,
@@ -200,7 +200,7 @@ class MainActivity : AppCompatActivity() {
             )
             .replace(
                 R.id.fragment_container,
-                CategoryAddFragment.newInstance(type),
+                CategoryAddFragment.newInstance(type, categoryId),
                 categoryAddTag
             )
             .addToBackStack(categoryAddTag)
